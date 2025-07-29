@@ -1,0 +1,146 @@
+/* Custom Tangerine Orange Theme */
+:root {
+  --primary-color: #FF9E2C;      /* Main tangerine */
+  --primary-light: #FFB75E;      /* Light tangerine */
+  --primary-dark: #F67F00;       /* Dark tangerine */
+  --accent-color: #2C82C9;       /* Complementary blue */
+}
+
+/* Primary Color Classes */
+.btn, .btn-large, .btn-floating {
+  background-color: var(--primary-color) !important;
+}
+
+.btn:hover, .btn-large:hover, .btn-floating:hover {
+  background-color: var(--primary-dark) !important;
+}
+
+.btn:focus, .btn-large:focus, .btn-floating:focus {
+  background-color: var(--primary-light) !important;
+}
+
+/* Navigation */
+nav {
+  background-color: var(--primary-color) !important;
+}
+
+nav .brand-logo {
+  color: white;
+}
+
+/* Form Elements */
+.input-field .prefix.active {
+  color: var(--primary-color) !important;
+}
+
+/* Text inputs + Textarea */
+input:not([type]):focus:not([readonly]),
+input[type=text]:focus:not([readonly]),
+input[type=password]:focus:not([readonly]),
+input[type=email]:focus:not([readonly]),
+input[type=url]:focus:not([readonly]),
+input[type=time]:focus:not([readonly]),
+input[type=date]:focus:not([readonly]),
+input[type=datetime]:focus:not([readonly]),
+input[type=datetime-local]:focus:not([readonly]),
+input[type=tel]:focus:not([readonly]),
+input[type=number]:focus:not([readonly]),
+input[type=search]:focus:not([readonly]),
+textarea.materialize-textarea:focus:not([readonly]) {
+  border-bottom: 1px solid var(--primary-color) !important;
+  box-shadow: 0 1px 0 0 var(--primary-color) !important;
+}
+
+/* Input Labels */
+input:not([type]):focus:not([readonly]) + label,
+input[type=text]:focus:not([readonly]) + label,
+input[type=password]:focus:not([readonly]) + label,
+input[type=email]:focus:not([readonly]) + label,
+input[type=url]:focus:not([readonly]) + label,
+input[type=time]:focus:not([readonly]) + label,
+input[type=date]:focus:not([readonly]) + label,
+input[type=datetime]:focus:not([readonly]) + label,
+input[type=datetime-local]:focus:not([readonly]) + label,
+input[type=tel]:focus:not([readonly]) + label,
+input[type=number]:focus:not([readonly]) + label,
+input[type=search]:focus:not([readonly]) + label,
+textarea.materialize-textarea:focus:not([readonly]) + label {
+  color: var(--primary-color) !important;
+}
+
+/* Valid Input */
+input.valid:not([type]), input.valid:not([type]):focus,
+input.valid[type=text]:not(.browser-default), input.valid[type=text]:not(.browser-default):focus,
+input.valid[type=password]:not(.browser-default), input.valid[type=password]:not(.browser-default):focus,
+input.valid[type=email]:not(.browser-default), input.valid[type=email]:not(.browser-default):focus {
+  border-bottom: 1px solid var(--primary-color) !important;
+  box-shadow: 0 1px 0 0 var(--primary-color) !important;
+}
+
+/* Checkboxes */
+[type="checkbox"]:checked + span:not(.lever):before {
+  border-right: 2px solid var(--primary-color) !important;
+  border-bottom: 2px solid var(--primary-color) !important;
+}
+
+/* Custom Action Button Colors */
+.btn-add {
+  background-color: var(--primary-color) !important;
+}
+
+.btn-edit {
+  background-color: var(--primary-light) !important;
+}
+
+/* Modal Headers */
+.modal .modal-content h4 {
+  color: var(--primary-dark);
+}
+
+/* Table Highlights */
+.highlight tbody tr:hover {
+  background-color: rgba(255, 158, 44, 0.1) !important;
+}
+
+/* Toast Colors */
+.toast.success {
+  background-color: #4CAF50;
+}
+
+.toast.error {
+  background-color: #F44336;
+}
+
+.toast.info {
+  background-color: var(--primary-color);
+}
+
+/* Preloader Colors */
+.spinner-blue-only {
+  border-color: var(--primary-color) !important;
+}
+
+/* Waves Effect */
+.waves-effect.waves-custom .waves-ripple {
+  background-color: rgba(255, 158, 44, 0.4);
+}
+
+/* Card Headers */
+.card .card-title {
+  color: var(--primary-dark);
+}
+
+/* Pagination */
+.pagination li.active {
+  background-color: var(--primary-color) !important;
+}
+
+/* Collection Items */
+.collection .collection-item.active {
+  background-color: var(--primary-color) !important;
+}
+
+/* Progress Bar */
+.progress .determinate, .progress .indeterminate {
+  background-color: var(--primary-color) !important;
+}

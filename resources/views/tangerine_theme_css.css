@@ -1,0 +1,459 @@
+/* Tangerine Orange Theme CSS */
+:root {
+    /* Primary Tangerine Orange Palette */
+    --tangerine-primary: #FF8C42;
+    --tangerine-secondary: #FF6B1A;
+    --tangerine-accent: #FF5722;
+    --tangerine-light: #FFB366;
+    --tangerine-lighter: #FFD4B3;
+    --tangerine-dark: #E65100;
+    --tangerine-darker: #BF360C;
+    
+    /* Complementary Colors */
+    --tangerine-blue: #1976D2;
+    --tangerine-green: #388E3C;
+    --tangerine-red: #D32F2F;
+    --tangerine-yellow: #F57C00;
+    
+    /* Neutral Colors */
+    --tangerine-white: #FFFFFF;
+    --tangerine-light-gray: #F5F5F5;
+    --tangerine-gray: #9E9E9E;
+    --tangerine-dark-gray: #424242;
+    --tangerine-black: #212121;
+    
+    /* Sidebar Variables */
+    --sidebar-width: 280px;
+    --header-height: 60px;
+}
+
+/* Body and Background */
+body {
+    background: linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Sidebar Styling */
+.sidebar {
+    background: linear-gradient(135deg, var(--tangerine-primary) 0%, var(--tangerine-secondary) 50%, var(--tangerine-accent) 100%);
+    box-shadow: 4px 0 15px rgba(255, 107, 26, 0.2);
+}
+
+.sidebar-header {
+    background: rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+}
+
+.sidebar-header h4 {
+    color: var(--tangerine-white);
+    font-weight: 600;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.sidebar-menu .nav-link {
+    color: rgba(255, 255, 255, 0.9);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 8px;
+    margin: 2px 8px;
+}
+
+.sidebar-menu .nav-link:hover {
+    color: var(--tangerine-white);
+    background: rgba(255, 255, 255, 0.15);
+    border-left: 4px solid var(--tangerine-white);
+    transform: translateX(5px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-menu .nav-link.active {
+    color: var(--tangerine-white);
+    background: rgba(255, 255, 255, 0.2);
+    border-left: 4px solid var(--tangerine-white);
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Header Styling */
+.header {
+    background: linear-gradient(90deg, var(--tangerine-white) 0%, #FFF8F0 100%);
+    border-bottom: 3px solid var(--tangerine-light);
+    box-shadow: 0 4px 20px rgba(255, 140, 66, 0.1);
+}
+
+.header .btn-outline-secondary {
+    border-color: var(--tangerine-primary);
+    color: var(--tangerine-primary);
+    transition: all 0.3s ease;
+}
+
+.header .btn-outline-secondary:hover {
+    background-color: var(--tangerine-primary);
+    border-color: var(--tangerine-primary);
+    color: var(--tangerine-white);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 140, 66, 0.3);
+}
+
+#sidebarToggle {
+    color: var(--tangerine-primary);
+    font-size: 1.2em;
+}
+
+#sidebarToggle:hover {
+    color: var(--tangerine-secondary);
+}
+
+/* Cards Styling */
+.card {
+    background: var(--tangerine-white);
+    border: none;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(255, 140, 66, 0.1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+}
+
+.card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 16px 48px rgba(255, 140, 66, 0.2);
+}
+
+.card-header {
+    background: linear-gradient(135deg, var(--tangerine-lighter) 0%, #FFE0B2 100%);
+    border-bottom: 2px solid var(--tangerine-light);
+    color: var(--tangerine-dark);
+    font-weight: 600;
+}
+
+/* Stat Cards */
+.stat-card {
+    border-left: 6px solid;
+    border-radius: 16px;
+    background: linear-gradient(135deg, var(--tangerine-white) 0%, #FFF8F0 100%);
+}
+
+.stat-card.primary { 
+    border-color: var(--tangerine-primary);
+    background: linear-gradient(135deg, var(--tangerine-white) 0%, var(--tangerine-lighter) 20%);
+}
+
+.stat-card.success { 
+    border-color: var(--tangerine-green);
+    background: linear-gradient(135deg, var(--tangerine-white) 0%, #E8F5E8 20%);
+}
+
+.stat-card.warning { 
+    border-color: var(--tangerine-yellow);
+    background: linear-gradient(135deg, var(--tangerine-white) 0%, #FFF4E6 20%);
+}
+
+.stat-card.danger { 
+    border-color: var(--tangerine-red);
+    background: linear-gradient(135deg, var(--tangerine-white) 0%, #FFEBEE 20%);
+}
+
+/* Buttons */
+.btn-primary {
+    background: linear-gradient(135deg, var(--tangerine-primary) 0%, var(--tangerine-secondary) 100%);
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(255, 140, 66, 0.3);
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, var(--tangerine-secondary) 0%, var(--tangerine-accent) 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 140, 66, 0.4);
+}
+
+.btn-outline-primary {
+    border-color: var(--tangerine-primary);
+    color: var(--tangerine-primary);
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--tangerine-primary);
+    border-color: var(--tangerine-primary);
+    color: var(--tangerine-white);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 140, 66, 0.3);
+}
+
+.btn-outline-secondary {
+    border-color: var(--tangerine-gray);
+    color: var(--tangerine-dark-gray);
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.btn-outline-danger {
+    border-color: var(--tangerine-red);
+    color: var(--tangerine-red);
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.btn-outline-danger:hover {
+    background-color: var(--tangerine-red);
+    border-color: var(--tangerine-red);
+    transform: translateY(-1px);
+}
+
+/* Tables */
+.table-container {
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(255, 140, 66, 0.08);
+}
+
+.table thead th {
+    background: linear-gradient(135deg, var(--tangerine-lighter) 0%, #FFE0B2 100%);
+    color: var(--tangerine-dark);
+    font-weight: 600;
+    border: none;
+    padding: 1rem;
+}
+
+.table tbody tr {
+    transition: all 0.2s ease;
+}
+
+.table tbody tr:hover {
+    background: linear-gradient(135deg, #FFF8F0 0%, var(--tangerine-lighter) 20%);
+    transform: scale(1.01);
+}
+
+/* Badges */
+.badge.bg-success {
+    background: linear-gradient(135deg, var(--tangerine-green) 0%, #4CAF50 100%) !important;
+    box-shadow: 0 2px 8px rgba(56, 142, 60, 0.3);
+}
+
+.badge.bg-warning {
+    background: linear-gradient(135deg, var(--tangerine-yellow) 0%, #FF9800 100%) !important;
+    box-shadow: 0 2px 8px rgba(245, 124, 0, 0.3);
+}
+
+.badge.bg-danger {
+    background: linear-gradient(135deg, var(--tangerine-red) 0%, #F44336 100%) !important;
+    box-shadow: 0 2px 8px rgba(211, 47, 47, 0.3);
+}
+
+.badge.bg-info {
+    background: linear-gradient(135deg, var(--tangerine-blue) 0%, #2196F3 100%) !important;
+    box-shadow: 0 2px 8px rgba(25, 118, 210, 0.3);
+}
+
+.badge.bg-primary {
+    background: linear-gradient(135deg, var(--tangerine-primary) 0%, var(--tangerine-secondary) 100%) !important;
+    box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
+}
+
+.badge.bg-secondary {
+    background: linear-gradient(135deg, var(--tangerine-gray) 0%, #757575 100%) !important;
+    box-shadow: 0 2px 8px rgba(158, 158, 158, 0.3);
+}
+
+/* Form Controls */
+.form-control {
+    border: 2px solid var(--tangerine-lighter);
+    border-radius: 10px;
+    transition: all 0.3s ease;
+    background: var(--tangerine-white);
+}
+
+.form-control:focus {
+    border-color: var(--tangerine-primary);
+    box-shadow: 0 0 0 0.2rem rgba(255, 140, 66, 0.25);
+    background: var(--tangerine-white);
+}
+
+.form-select {
+    border: 2px solid var(--tangerine-lighter);
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+
+.form-select:focus {
+    border-color: var(--tangerine-primary);
+    box-shadow: 0 0 0 0.2rem rgba(255, 140, 66, 0.25);
+}
+
+/* Dropdowns */
+.dropdown-menu {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(255, 140, 66, 0.15);
+    background: var(--tangerine-white);
+}
+
+.dropdown-item {
+    transition: all 0.2s ease;
+    border-radius: 8px;
+    margin: 2px 4px;
+}
+
+.dropdown-item:hover {
+    background: linear-gradient(135deg, var(--tangerine-lighter) 0%, #FFE0B2 100%);
+    color: var(--tangerine-dark);
+    transform: translateX(4px);
+}
+
+/* Progress Bars */
+.progress {
+    height: 8px;
+    border-radius: 10px;
+    background: var(--tangerine-lighter);
+    overflow: hidden;
+}
+
+.progress-bar {
+    background: linear-gradient(135deg, var(--tangerine-primary) 0%, var(--tangerine-secondary) 100%);
+    border-radius: 10px;
+    transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.progress-bar.bg-success {
+    background: linear-gradient(135deg, var(--tangerine-green) 0%, #4CAF50 100%) !important;
+}
+
+.progress-bar.bg-warning {
+    background: linear-gradient(135deg, var(--tangerine-yellow) 0%, #FF9800 100%) !important;
+}
+
+/* Alert Notifications */
+.notification {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    backdrop-filter: blur(10px);
+}
+
+.alert-success {
+    background: linear-gradient(135deg, rgba(56, 142, 60, 0.1) 0%, rgba(76, 175, 80, 0.05) 100%);
+    border-left: 4px solid var(--tangerine-green);
+    color: #2E7D32;
+}
+
+.alert-info {
+    background: linear-gradient(135deg, rgba(25, 118, 210, 0.1) 0%, rgba(33, 150, 243, 0.05) 100%);
+    border-left: 4px solid var(--tangerine-blue);
+    color: #1565C0;
+}
+
+.alert-warning {
+    background: linear-gradient(135deg, rgba(245, 124, 0, 0.1) 0%, rgba(255, 152, 0, 0.05) 100%);
+    border-left: 4px solid var(--tangerine-yellow);
+    color: #E65100;
+}
+
+.alert-danger {
+    background: linear-gradient(135deg, rgba(211, 47, 47, 0.1) 0%, rgba(244, 67, 54, 0.05) 100%);
+    border-left: 4px solid var(--tangerine-red);
+    color: #C62828;
+}
+
+/* Loading Spinner */
+.spinner-border.text-primary {
+    color: var(--tangerine-primary) !important;
+}
+
+/* Icons */
+.text-primary {
+    color: var(--tangerine-primary) !important;
+}
+
+.text-success {
+    color: var(--tangerine-green) !important;
+}
+
+.text-warning {
+    color: var(--tangerine-yellow) !important;
+}
+
+.text-danger {
+    color: var(--tangerine-red) !important;
+}
+
+/* Chart Container */
+.chart-container {
+    background: var(--tangerine-white);
+    border-radius: 12px;
+    padding: 1rem;
+}
+
+/* Scrollbar Styling */
+.sidebar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+/* Content Area */
+.content-area {
+    background: transparent;
+    min-height: calc(100vh - var(--header-height));
+}
+
+/* Overlay */
+.overlay {
+    background: rgba(255, 140, 66, 0.4);
+    backdrop-filter: blur(4px);
+}
+
+/* Responsive Text Colors */
+@media (max-width: 767px) {
+    .sidebar-header h4 {
+        font-size: 1.1rem;
+    }
+    
+    .stat-card h3 {
+        font-size: 1.5rem;
+    }
+}
+
+/* Animations */
+@keyframes tangerineGlow {
+    0%, 100% { box-shadow: 0 4px 12px rgba(255, 140, 66, 0.3); }
+    50% { box-shadow: 0 8px 24px rgba(255, 140, 66, 0.5); }
+}
+
+.btn-primary:hover {
+    animation: tangerineGlow 2s infinite;
+}
+
+/* Focus States */
+*:focus {
+    outline: 2px solid var(--tangerine-primary);
+    outline-offset: 2px;
+}
+
+/* Custom utility classes */
+.bg-tangerine {
+    background: linear-gradient(135deg, var(--tangerine-primary) 0%, var(--tangerine-secondary) 100%) !important;
+}
+
+.text-tangerine {
+    color: var(--tangerine-primary) !important;
+}
+
+.border-tangerine {
+    border-color: var(--tangerine-primary) !important;
+}
