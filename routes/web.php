@@ -6,8 +6,8 @@ use Illuminate\Support\Facades\Auth;
 Route::view('/login', 'auth.login')->name('login');
 Route::view('/register', 'auth.register')->name('register');
 
-
-Route::view('/', 'dashboard')->name('home');
+// Route the root URL to the welcome page
+Route::view('/', 'welcome')->name('home');
 Route::view('/dashboard', 'dashboard')->name('dashboard');
 Route::post('/logout', function () {
     auth()->user()->tokens()->delete();

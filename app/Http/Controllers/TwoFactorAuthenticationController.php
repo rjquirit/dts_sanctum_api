@@ -170,23 +170,15 @@ class TwoFactorAuthenticationController extends Controller
                 'message' => 'Recovery successful',
                 'remaining_codes' => method_exists($user, 'recoveryCodes') ? count($user->recoveryCodes()) : 0
             ]);
-
-    // --- Resourceful methods for 2FA management (optional RESTful endpoints) ---
-    }
-
-    /**
-     * Display a listing of the resource (2FA status).
-     */
-    public function index(Request $request)
-    {
-        return $this->getStatus($request);
-    }
-
-    /**
-     * Store a newly created resource in storage (enable 2FA).
-     */
-    public function store(Request $request, EnableTwoFactorAuthentication $enable)
-    {
+        } catch (\Exception $e) {
+            Log::error('Error in 2FA recovery challenge:', [
+                'error' => $e->getMessage()
+            ]);
+            return response()->json([
+                'message' => 'Failed to process recovery code',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     // --- Resourceful methods for 2FA management (optional RESTful endpoints) ---
@@ -225,3 +217,5 @@ class TwoFactorAuthenticationController extends Controller
     {
         return $this->disable($request, $disable);
     }
+
+}

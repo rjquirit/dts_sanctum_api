@@ -22,5 +22,5 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
-/NOT INCLUDED frontend_mobile_app/node_modules
+NOT INCLUDED/
 *.zip
