@@ -1,17 +1,28 @@
+
 <?php
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 
+Route::view('/search', 'search')->name('search');
 Route::view('/login', 'auth.login')->name('login');
 Route::view('/register', 'auth.register')->name('register');
 
-// Route the root URL to the welcome page
 Route::view('/', 'welcome')->name('home');
-Route::view('/dashboard', 'dashboard')->name('dashboard');
+
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::get('/dashboard', function () {
+        return view('dashboard');
+    })->name('dashboard');
+});
+
 Route::post('/logout', function () {
-    auth()->user()->tokens()->delete();
-    return response()->json(['message' => 'Logged out successfully']);
+    $user = auth()->user();
+    if ($user) {
+        $user->tokens()->delete();
+        return response()->json(['message' => 'Logged out successfully']);
+    }
+    return response()->json(['message' => 'No authenticated user'], 401);
 });
 
 Route::view('/offline', 'offline');

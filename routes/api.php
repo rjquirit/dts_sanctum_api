@@ -2,22 +2,27 @@
 
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\TwoFactorAuthenticationController;
+use App\Http\Controllers\DocumentTrackingController;
+use App\Http\Controllers\DocroutesController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\TwoFactorAuthenticationController;
 
-// Public routes
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
-// Protected routes
+Route::get('/docmain/track/{doc_id}', [DocumentTrackingController::class, 'track']);
+Route::get('/docroutes/{doc_id}', [DocroutesController::class, 'routesForDoc']);
+
+Route::prefix('test')->group(function () {
+    Route::get('/users', [UserController::class, 'index'])->name('test.users');
+});
+
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
     
-    // User management routes
     Route::apiResource('users', UserController::class);
 
-        // Two-Factor Authentication routes
     Route::get('/two-factor', [TwoFactorAuthenticationController::class, 'index']); // status
     Route::post('/two-factor', [TwoFactorAuthenticationController::class, 'store']); // enable
     Route::post('/two-factor/confirm', [TwoFactorAuthenticationController::class, 'confirm']); // confirm code

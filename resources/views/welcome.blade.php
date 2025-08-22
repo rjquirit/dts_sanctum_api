@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const docId = document.getElementById('doc_id').value;
         const resultDiv = document.getElementById('search-result');
         resultDiv.innerHTML = 'Searching...';
-        fetch(`/api/docmain/search?doc_id=${encodeURIComponent(docId)}`)
+        fetch(`/api/docmain/track/${encodeURIComponent(docId)}`)
             .then(res => res.json())
             .then(data => {
                 if (data && data.doc) {

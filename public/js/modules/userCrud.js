@@ -12,8 +12,13 @@ function renderUsers(users, tableBodySelector) {
     tbody.innerHTML = '';
     
     users.forEach(user => {
+        if (!user || typeof user !== 'object') {
+            console.warn('Invalid user object:', user);
+            return;
+        }
+
         const tr = document.createElement('tr');
-        tr.dataset.id = user.id;
+        tr.dataset.id = user.id || '';
         tr.innerHTML = `
             <td>${escapeHtml(user.name)}</td>
             <td>${escapeHtml(user.email)}</td>
@@ -30,7 +35,14 @@ function renderUsers(users, tableBodySelector) {
  * Sanitize HTML content
  */
 function escapeHtml(unsafe) {
-    return unsafe
+    if (unsafe === null || unsafe === undefined) {
+        return '';
+    }
+    
+    // Convert to string in case we receive a number or other type
+    const str = String(unsafe);
+    
+    return str
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
@@ -112,7 +124,7 @@ export async function loadUsers(tableBodySelector) {
             }
         }
         
-        showError('Failed to load users. Please try again.');
+        showError('Failed to load users from Cache. Please try again.');
         
         // Show cached data as fallback
         const cachedUsers = JSON.parse(localStorage.getItem(USERS_CACHE_KEY) || '[]');
