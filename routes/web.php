@@ -10,11 +10,11 @@ Route::view('/register', 'auth.register')->name('register');
 
 Route::view('/', 'welcome')->name('home');
 
-Route::middleware(['auth:sanctum'])->group(function () {
+//Route::middleware(auth)->group(function () {
     Route::get('/dashboard', function () {
         return view('dashboard');
     })->name('dashboard');
-});
+//});
 
 Route::post('/logout', function () {
     $user = auth()->user();
