@@ -12,7 +12,6 @@ const STATIC_FILES = [
   '/css/theme.css',
   'https://fonts.googleapis.com/icon?family=Material+Icons',
   '/js/materialize.min.js',
-  'https://code.jquery.com/jquery-3.7.0.min.js',
   '/js/main.js',
   '/js/modules/auth.js',
   '/js/modules/utils.js',

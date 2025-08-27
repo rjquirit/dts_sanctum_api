@@ -13,13 +13,34 @@ document.addEventListener('DOMContentLoaded', () => {
     bindUserActions('#userForm', '#usersTable tbody');
   }
 
-  // Register PWA service worker
+  // Register PWA service worker - improved version
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/js/sw.js');
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js', {
+        scope: '/'
+      })
+      .then(registration => {
+        console.log('SW: Registration successful with scope:', registration.scope);
+        
+        // Handle updates
+        registration.addEventListener('updatefound', () => {
+          const newWorker = registration.installing;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              console.log('SW: New version available, will activate on next page load');
+            }
+          });
+        });
+      })
+      .catch(error => {
+        console.error('SW: Registration failed:', error);
+      });
+    });
+  } else {
+    console.log('SW: Service workers not supported');
   }
-
-  
 });
+
 // Navigation and responsive behavior handler
 export class AppNavigation {
   constructor() {
@@ -117,7 +138,7 @@ export class AppNavigation {
       };
 
       const title = titles[tabId] || 'Dashboard';
-      document.title = `Secure PWA App - ${title}`;
+      document.title = `DepEd ROX - ${title}`;
   }
 
   handleResponsiveNavigation() {

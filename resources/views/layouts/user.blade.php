@@ -5,16 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="theme-color" content="#2c3e50">
-    <title>{{ config('app.name', 'Laravel') }} - @yield('title')</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="DTS API">
+    <meta name="msapplication-TileColor" content="#2c3e50">
+    <meta name="msapplication-config" content="/browserconfig.xml">
+    <title>{{ config('app.name', 'ROX') }} - @yield('title')</title>
     
     <!-- CSS -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="{{ asset('css/style.css') }}" rel="stylesheet">
     
-    <!-- PWA -->
+    <!-- PWA Manifest and Icons -->
     <link rel="manifest" href="/manifest.json">
-    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="/icons/icon-512.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16.png">
 </head>
 <body>
     <!-- Main App Container -->
@@ -22,10 +30,11 @@
         <!-- Top Navigation Bar -->
         <nav class="top-navbar">
             <div class="d-flex justify-content-between w-100 align-items-center">
-                <h4 class="mb-0">Secure PWA App</h4>
+                <h4 class="mb-0">DTS 3.0</h4>
                 <div>
                     <span id="userNameDisplay" class="me-3">{{ Auth::user()->name ?? 'User' }}</span>
-                    <button class="btn btn-outline-light btn-sm" onclick="logout()">
+                    <!-- <button class="btn btn-outline-light btn-sm" onclick="logout()"> -->
+                    <button id="logoutBtn" class="btn btn-outline-light btn-sm">
                         <i class="fas fa-sign-out-alt"></i> Logout
                     </button>
                 </div>
@@ -36,20 +45,24 @@
         <aside class="sidebar" id="sidebar">
             <ul class="sidebar-nav">
                 <li><a href="#" class="nav-link active" data-tab="dashboard">
-                    <i class="fas fa-home"></i>
-                    <span>Dashboard</span>
+                    <i class="fas fa-inbox"></i>
+                    <span>Incoming</span>
                 </a></li>
                 <li><a href="#" class="nav-link" data-tab="users">
-                    <i class="fas fa-users"></i>
-                    <span>User Management</span>
+                    <i class="fas fa-plus"></i>
+                    <span>New Document</span>
                 </a></li>
                 <li><a href="#" class="nav-link" data-tab="profile">
-                    <i class="fas fa-user"></i>
-                    <span>Profile</span>
+                    <i class="fas fa-search"></i>
+                    <span>Search</span>
                 </a></li>
                 <li><a href="#" class="nav-link" data-tab="settings">
-                    <i class="fas fa-cog"></i>
-                    <span>Settings</span>
+                    <i class="fas fa-share"></i>
+                    <span>Forward</span>
+                </a></li>
+                <li><a href="#" class="nav-link" data-tab="settings">
+                    <i class="fas fa-archive"></i>
+                    <span>Keep</span>
                 </a></li>
             </ul>
         </aside>
@@ -192,26 +205,31 @@
         <!-- Bottom Navigation (Mobile/Portrait) -->
         <nav class="bottom-nav" id="bottomNav">
             <div class="nav-item active" data-tab="dashboard">
-                <i class="fas fa-home"></i>
-                <span>Dashboard</span>
+                <i class="fas fa-inbox"></i>
+                    <span>Inbox</span>
             </div>
             <div class="nav-item" data-tab="users">
-                <i class="fas fa-users"></i>
-                <span>Users</span>
+                <i class="fas fa-plus"></i>
+                    <span>New</span>
             </div>
             <div class="nav-item" data-tab="profile">
-                <i class="fas fa-user"></i>
-                <span>Profile</span>
+                <i class="fas fa-search"></i>
+                    <span>Find</span>
             </div>
             <div class="nav-item" data-tab="settings">
-                <i class="fas fa-cog"></i>
-                <span>Settings</span>
+                <i class="fas fa-share"></i>
+                    <span>Send</span>
+            </div>
+            <div class="nav-item" data-tab="setting">
+                <i class="fas fa-archive"></i>
+                    <span>Keep</span>
             </div>
         </nav>
     </div>
 
     <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script type="module" src="{{ asset('js/main.js') }}" defer></script>
     <script>
         // Tab switching functionality
         function switchTab(tabId) {
@@ -254,15 +272,32 @@
             });
         });
 
-        // Logout function
-        function logout() {
+        document.addEventListener('DOMContentLoaded', function() {
+        // Wait for main.js to load before initializing user-specific features
+        if (window.AppNavigation) {
+            window.userNavigation = new AppNavigation();
+        } else {
+            // Fallback if AppNavigation isn't loaded yet
+            setTimeout(() => {
+                if (window.AppNavigation) {
+                    window.userNavigation = new AppNavigation();
+                }
+            }, 100);
+        }
+    });
+
+    // Logout function - use the one from main.js if available
+    function logout() {
+        if (window.logout && typeof window.logout === 'function') {
+            window.logout();
+        } else {
+            // Fallback logout
             if (confirm('Are you sure you want to logout?')) {
-                // Add your logout logic here
                 window.location.href = '/logout';
             }
         }
-    </script>
-    <script type="module" src="{{ asset('js/main.js') }}"></script>
-    @stack('scripts')
+    }
+</script>
+@stack('scripts')
 </body>
 </html>

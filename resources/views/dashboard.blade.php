@@ -18,7 +18,7 @@
     <main>
         <div class="header-bar">
             <h2>Welcome, <span id="userName">User</span></h2>
-            <button id="logoutBtn" class="btn-danger">Logout</button>
+            <!-- <button id="logoutBtn" class="btn-danger">Logout</button> -->
         </div>
 
         <form id="userForm" class="card p-3">
