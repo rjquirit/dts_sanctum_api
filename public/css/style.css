@@ -129,7 +129,6 @@ body {
     flex: 1;
     padding: 20px;
     margin-top: var(--navbar-height);
-    margin-left: var(--sidebar-width);
     overflow-y: auto;
     background: var(--background-light);
     min-height: calc(100vh - var(--navbar-height));
@@ -137,7 +136,6 @@ body {
 
 /* Bottom Navigation (Mobile/Portrait) */
 .bottom-nav {
-    display: none;
     position: fixed;
     bottom: 0;
     left: 0;
@@ -148,34 +146,30 @@ body {
     z-index: 1000;
     height: var(--bottom-nav-height);
     overflow: hidden;
-}
-
-/* Force grid layout with higher specificity */
-.bottom-nav {
-    display: grid !important;
-    grid-template-columns: repeat(5, 1fr) !important;
-    gap: 0 !important;
-    align-items: stretch !important;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0;
+    align-items: stretch;
 }
 
 .nav-item {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    justify-content: center !important;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     color: var(--text-light);
     padding: 4px 2px;
     cursor: pointer;
     transition: all 0.3s ease;
-    text-decoration: none !important;
+    text-decoration: none;
     opacity: 0.7;
     position: relative;
-    min-width: 0 !important;
-    width: 100% !important;
-    max-width: none !important;
-    flex-shrink: 0 !important;
-    flex-grow: 1 !important;
-    box-sizing: border-box !important;
+    min-width: 0;
+    width: 100%;
+    max-width: none;
+    flex-shrink: 0;
+    flex-grow: 1;
+    box-sizing: border-box;
 }
 
 .nav-item::after {
@@ -209,17 +203,17 @@ body {
 }
 
 .nav-item span {
-    font-size: 0.55rem !important;
+    font-size: 0.55rem;
     font-weight: 500;
-    text-align: center !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    max-width: 100% !important;
-    line-height: 1.1 !important;
-    display: block !important;
-    margin: 0 !important;
-    padding: 0 !important;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    line-height: 1.1;
+    display: block;
+    margin: 0;
+    padding: 0;
 }
 
 /* Tab Content */
@@ -375,78 +369,74 @@ body {
     background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
 }
 
-/* Responsive Design */
+/* ========================================== */
+/* RESPONSIVE DESIGN - MOBILE FIRST APPROACH */
+/* ========================================== */
 
-/* Large tablets and small desktops (landscape) */
-@media (max-width: 1024px) and (orientation: landscape) {
+/* DEFAULT STATE: Mobile/Portrait - Bottom Navigation */
+.sidebar {
+    display: none;
+}
+
+.main-content {
+    margin-left: 0;
+    margin-bottom: var(--bottom-nav-height);
+    padding: 15px;
+}
+
+/* DESKTOP AND LARGE TABLETS: Show sidebar, hide bottom nav */
+@media (min-width: 769px) {
     .sidebar {
-        display: block;
+        display: block !important;
     }
     
     .bottom-nav {
-        display: none;
+        display: none !important;
     }
     
     .main-content {
-        margin-left: var(--sidebar-width);
-        margin-bottom: 0;
+        margin-left: var(--sidebar-width) !important;
+        margin-bottom: 0 !important;
+        padding: 20px;
     }
 }
 
-/* Portrait tablets (768px to 1024px) */
-@media (max-width: 1024px) and (orientation: portrait) {
+/* LANDSCAPE ORIENTATION: Always prefer sidebar (even on smaller screens) */
+@media (orientation: landscape) and (min-height: 400px) {
     .sidebar {
-        display: none;
+        display: block !important;
+    }
+    
+    .bottom-nav {
+        display: none !important;
     }
     
     .main-content {
-        margin-left: 0;
-        margin-bottom: var(--bottom-nav-height);
+        margin-left: var(--sidebar-width) !important;
+        margin-bottom: 0 !important;
+    }
+}
+
+/* TABLETS IN PORTRAIT: Ensure bottom nav shows */
+@media (max-width: 768px) and (orientation: portrait) {
+    .sidebar {
+        display: none !important;
+    }
+    
+    .bottom-nav {
+        display: grid !important;
+        grid-template-columns: repeat(5, 1fr) !important;
+    }
+    
+    .main-content {
+        margin-left: 0 !important;
+        margin-bottom: var(--bottom-nav-height) !important;
         padding: 15px;
     }
-    
-    .bottom-nav {
-        display: grid;
-        grid-template-columns: repeat(5, 1fr);
-    }
 }
 
-/* Mobile devices (max-width: 768px) */
-@media (max-width: 768px) {
-    .sidebar {
-        display: none;
-    }
-    
-    .main-content {
-        margin-left: 0;
-        margin-bottom: var(--bottom-nav-height);
-        padding: 15px;
-    }
-    
-    .bottom-nav {
-        display: grid;
-        grid-template-columns: repeat(5, 1fr);
-    }
-    
-    .top-navbar {
-        padding: 10px 15px;
-    }
-    
-    .top-navbar h4 {
-        font-size: 1.1rem;
-    }
-    
-    .card {
-        margin-bottom: 15px;
-    }
-    
-    .container-fluid {
-        padding: 0;
-    }
-}
-
-/* Small mobile devices (max-width: 480px) */
-@media (max-width: 480px) {
+/* SMALL MOBILE DEVICES: Specific adjustments */
+@media (max-width: 480px) and (orientation: portrait) {
     :root {
         --navbar-height: 50px;
         --bottom-nav-height: 65px;
@@ -465,11 +455,18 @@ body {
         padding: 10px;
         margin-top: var(--navbar-height);
         margin-bottom: var(--bottom-nav-height);
+        margin-left: 0 !important;
+    }
+    
+    .sidebar {
+        display: none !important;
     }
     
     .bottom-nav {
         height: var(--bottom-nav-height);
         padding: 5px 0;
+        display: grid !important;
+        grid-template-columns: repeat(5, 1fr) !important;
     }
     
     .nav-item {
@@ -490,23 +487,24 @@ body {
     }
 }
 
-/* Force desktop layout for landscape orientation regardless of screen size */
-@media (orientation: landscape) and (min-height: 500px) {
+/* VERY SMALL SCREENS: Override landscape preference */
+@media (max-width: 640px) and (max-height: 400px) and (orientation: landscape) {
     .sidebar {
-        display: block !important;
-    }
-    
-    .bottom-nav {
         display: none !important;
     }
     
+    .bottom-nav {
+        display: grid !important;
+        grid-template-columns: repeat(5, 1fr) !important;
+    }
+    
     .main-content {
-        margin-left: var(--sidebar-width) !important;
-        margin-bottom: 0 !important;
+        margin-left: 0 !important;
+        margin-bottom: var(--bottom-nav-height) !important;
     }
 }
 
-/* Special handling for very wide screens */
+/* WIDE DESKTOP SCREENS: Better spacing */
 @media (min-width: 1200px) {
     .main-content {
         padding: 30px;
@@ -518,7 +516,7 @@ body {
     }
 }
 
-/* Print styles */
+/* PRINT STYLES: Clean layout for printing */
 @media print {
     .top-navbar,
     .sidebar,
@@ -529,5 +527,17 @@ body {
     .main-content {
         margin: 0 !important;
         padding: 0 !important;
+        height: auto !important;
+        overflow: visible !important;
+    }
+    
+    .app-container {
+        height: auto !important;
+        overflow: visible !important;
+    }
+    
+    body {
+        overflow: visible !important;
+        height: auto !important;
     }
 }

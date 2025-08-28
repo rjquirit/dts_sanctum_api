@@ -69,14 +69,18 @@ export class AppNavigation {
 
   setupEventListeners() {
       // Sidebar navigation events
-      const sidebarLinks = document.querySelectorAll('.sidebar .nav-link');
-      sidebarLinks.forEach(link => {
-          link.addEventListener('click', (e) => {
-              e.preventDefault();
-              const tabId = link.getAttribute('data-tab');
-              this.switchTab(tabId);
-          });
-      });
+    const sidebarLinks = document.querySelectorAll('.sidebar .nav-link');
+    sidebarLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            // Don't prevent default navigation
+            const tabId = link.getAttribute('data-tab');
+            if (tabId) {
+                e.preventDefault();
+                this.switchTab(tabId);
+            }
+            // If no data-tab attribute, let the href handle navigation
+        });
+    });
 
       // Bottom navigation events
       const bottomNavItems = document.querySelectorAll('.bottom-nav .nav-item');
