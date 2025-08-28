@@ -23,9 +23,11 @@ Route::prefix('test')->group(function () {
     Route::get('/sections', [SectionController::class, 'index'])->name('test.section');
     Route::get('/doctypes', [DoctypesController::class, 'index'])->name('test.doctypes');
     Route::get('/offices', [OfficeController::class, 'index'])->name('test.offices');
+    Route::get('/auth/check', [AuthController::class, 'check']);
 });
 
 Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/auth/check', [AuthController::class, 'check']);
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
     
