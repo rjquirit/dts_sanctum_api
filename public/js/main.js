@@ -1,5 +1,7 @@
 import { bindLogin, bindRegister } from './modules/auth.js';
 import { loadUsers, bindUserActions } from './modules/userCrud.js';
+import { logout } from './modules/logout.js';
+
 
 document.addEventListener('DOMContentLoaded', () => {
   const path = window.location.pathname;
@@ -12,6 +14,12 @@ document.addEventListener('DOMContentLoaded', () => {
     loadUsers('#usersTable tbody');
     bindUserActions('#userForm', '#usersTable tbody');
   }
+
+  // Bind logout button
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', logout);
+    }
 
   // Register PWA service worker - improved version
   if ('serviceWorker' in navigator) {
@@ -213,22 +221,22 @@ export class AppNavigation {
 }
 
 // Logout function
-function logout() {
-  if (confirm('Are you sure you want to logout?')) {
-      // Show loading state
-      const logoutBtn = document.querySelector('button[onclick="logout()"]');
-      if (logoutBtn) {
-          logoutBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging out...';
-          logoutBtn.disabled = true;
-      }
+// function logout() {
+//   if (confirm('Are you sure you want to logout?')) {
+//       // Show loading state
+//       const logoutBtn = document.querySelector('button[onclick="logout()"]');
+//       if (logoutBtn) {
+//           logoutBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging out...';
+//           logoutBtn.disabled = true;
+//       }
 
-      // Simulate logout process (replace with actual logout logic)
-      setTimeout(() => {
-          // Replace this with your actual logout endpoint
-          window.location.href = '/logout';
-      }, 1000);
-  }
-}
+//       // Simulate logout process (replace with actual logout logic)
+//       setTimeout(() => {
+//           // Replace this with your actual logout endpoint
+//           window.location.href = '/logout';
+//       }, 1000);
+//   }
+// }
 
 // Utility functions
 const AppUtils = {

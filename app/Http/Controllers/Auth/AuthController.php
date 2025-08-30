@@ -93,7 +93,7 @@ class AuthController extends Controller
             'token_type' => 'Bearer',
             'user' => [
                 'id'         => $user->id,
-                'name'       => $user->name,
+                'name'       => explode(' ', trim($user->name))[0], //$user->name,
                 'email'      => $request->email,
                 'position'   => $user->position,
                 'section_id' => $user->section_id,   

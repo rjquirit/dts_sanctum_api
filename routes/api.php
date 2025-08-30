@@ -30,6 +30,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/auth/check', [AuthController::class, 'check']);
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
+    Route::put('/profile/password', [ProfileController::class, 'updatePassword']);
     
     Route::apiResource('users', UserController::class);
     Route::apiResource('sections', SectionController::class);

@@ -20,6 +20,8 @@ Route::middleware(VerifySanctumToken::class)->group(function () {
     Route::get('/forward', function () {return view('forward');})->name('forward');
     
     Route::get('/archive', function () {return view('archive');})->name('archive');
+
+    Route::get('/profile', function () {return view('profile');})->name('profile');
 });
 
 Route::post('/logout', function () {
