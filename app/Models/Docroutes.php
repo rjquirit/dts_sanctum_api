@@ -112,4 +112,14 @@ class Docroutes extends Model
     {
         return $this->belongsTo(User::class, 'route_touser_id', 'id');
     }
+
+    public function fromSection()
+    {
+        return $this->belongsTo(Sections::class, 'route_fromsection_id', 'section_id');
+    }
+
+    public function toSection()
+    {
+        return $this->belongsTo(Sections::class, 'route_tosection_id', 'section_id');
+    }
 }

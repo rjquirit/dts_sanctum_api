@@ -4,7 +4,8 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\SectionController;
 use App\Http\Controllers\DoctypesController;
-use App\Http\Controllers\OfficeController;  
+use App\Http\Controllers\OfficeController; 
+use App\Http\Controllers\ProfileController;
 
 use App\Http\Controllers\TwoFactorAuthenticationController;
 use App\Http\Controllers\DocumentTrackingController;
