@@ -18,8 +18,13 @@ document.addEventListener('DOMContentLoaded', () => {
   // Bind logout button
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
-        logoutBtn.addEventListener('click', logout);
-    }
+    logoutBtn.addEventListener('click', async () => {
+        const confirmLogout = confirm("Are you sure you want to logout?");
+        if (confirmLogout) {
+            await logout();
+        }
+    });
+}
 
   // Register PWA service worker - improved version
   if ('serviceWorker' in navigator) {

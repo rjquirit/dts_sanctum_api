@@ -37,7 +37,7 @@
                     <span id="userNameDisplay" class="me-3"><a href="{{ route('profile') }}" style="display: inline-block; padding: 6px 12px; background-color: #d35400; color: white; text-decoration: none; border-radius: 4px; font-weight: bold;">
                          {{ explode(' ', trim(Auth::user()->name))[0] ?? 'User' }}
                         </a></span>
-                    <button id="logoutBtn" class="btn btn-outline-light btn-sm" onclick="confirm('Are you sure you want to logout?');">
+                    <button id="logoutBtn" class="btn btn-outline-light btn-sm">
                         <i class="fas fa-sign-out-alt"></i>
                     </button>
                 </div>

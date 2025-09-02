@@ -22,6 +22,8 @@ Route::middleware(VerifySanctumToken::class)->group(function () {
     Route::get('/archive', function () {return view('archive');})->name('archive');
 
     Route::get('/profile', function () {return view('profile');})->name('profile');
+
+    Route::get('/search', function () {return view('search');})->name('search');
 });
 
 Route::post('/logout', function () {

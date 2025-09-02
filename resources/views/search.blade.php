@@ -1,5 +1,5 @@
 
-@extends('layouts.app')
+@extends('layouts.user')
 
 @section('content')
 <div class="container mx-auto py-10">
