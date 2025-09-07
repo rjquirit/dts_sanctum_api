@@ -80,7 +80,7 @@ function escapeHtml(unsafe) {
 /**
  * Load Docs from API or cache if offline
  */
-export async function loadDocs(tableBodySelector) {
+export async function loadDocs(tableBodySelector, url = '/api/documents') {
     const tableBody = document.querySelector(tableBodySelector);
     
     try {
@@ -105,7 +105,7 @@ export async function loadDocs(tableBodySelector) {
         }
 
         console.log('Fetching Docs from API...');
-        const docs = await API.get('/api/documents', {
+        const docs = await API.get(url, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -114,17 +114,27 @@ export async function loadDocs(tableBodySelector) {
         console.log('API Response:', docs);
         
         // Handle both array response and data wrapper response
-        let docsData;
+        let docsData = [];
+        let pagination = null;
+
         if (!docs) {
-            docsData = []; // Handle empty response as empty array
+            docsData = [];
         } else if (Array.isArray(docs)) {
             docsData = docs;
         } else if (docs.data && Array.isArray(docs.data)) {
-            // Already an array
             docsData = docs.data;
         } else if (docs.data && Array.isArray(docs.data.data)) {
-            // Handle Laravel paginator (docs.data.data)
+            // Laravel paginator
             docsData = docs.data.data;
+            pagination = {
+                current_page: docs.data.current_page,
+                last_page: docs.data.last_page,
+                per_page: docs.data.per_page,
+                total: docs.data.total,
+                from: docs.data.from,
+                to: docs.data.to,
+                links: docs.data.links
+            };
         } else if (typeof docs === 'object' && docs !== null) {
             docsData = [docs];
         } else {
@@ -136,6 +146,9 @@ export async function loadDocs(tableBodySelector) {
         // Cache Docss for offline access
         localStorage.setItem(DOCS_CACHE_KEY, JSON.stringify(docsData));
         renderDocs(docsData, tableBodySelector);
+        if (pagination) {
+            renderPagination(pagination);
+        }
     } catch (error) {
         console.error('Error loading docs:', {
             message: error.message,
@@ -168,6 +181,57 @@ export async function loadDocs(tableBodySelector) {
         hideLoading(tableBody);
     }
 }
+
+function renderPagination(pagination) {
+    const info = document.getElementById('paginationInfo');
+    const linksContainer = document.getElementById('paginationLinks');
+
+    if (!pagination || !info || !linksContainer) return;
+
+    // Update info text
+    info.textContent = `Showing ${pagination.from || 0} to ${pagination.to || 0} of ${pagination.total || 0} entries`;
+
+    // Clear links
+    linksContainer.innerHTML = '';
+
+    if (!Array.isArray(pagination.links)) return;
+
+    pagination.links.forEach(link => {
+        const li = document.createElement('li');
+        li.classList.add('page-item');
+        if (link.active) li.classList.add('active');
+        if (!link.url) li.classList.add('disabled');
+
+        const a = document.createElement('a');
+        a.classList.add('page-link');
+        a.href = '#';
+        a.innerHTML = link.label;
+
+        if (link.url) {
+        a.addEventListener('click', (e) => {
+            e.preventDefault();
+
+            // Strip base URL if Laravel returns absolute URLs
+            let pageUrl = link.url;
+            try {
+                const base = window.location.origin;
+                if (pageUrl.startsWith(base)) {
+                    pageUrl = pageUrl.replace(base, '');
+                }
+            } catch (err) {
+                console.warn("URL normalization failed", err);
+            }
+
+            loadDocs('#documentsTableBody', pageUrl);
+        });
+    }
+
+
+        li.appendChild(a);
+        linksContainer.appendChild(li);
+    });
+}
+
 
 export function bindDocsActions(formSelector, tableBodySelector) {
     const form = document.querySelector(formSelector);

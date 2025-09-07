@@ -11,10 +11,9 @@
                 <div class="col-md-3">
                     <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" id="toggleSwitch">
-                        <label class="form-check-label" for="toggleSwitch">
-                            Show Personal Documents
-                        </label>
+                        <label class="form-check-label" for="toggleSwitch">Show Personal Documents</label>
                     </div>
+
                 </div>
                 <div class="col-md-3">
                     <select class="form-select" id="docTypeFilter">
