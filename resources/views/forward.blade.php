@@ -15,14 +15,14 @@
                     </div>
 
                 </div>
-                <div class="col-md-3">
+                <!-- <div class="col-md-3">
                     <select class="form-select" id="docTypeFilter">
                         <option value="">All Document Types</option>
                         @foreach($documentTypes ?? [] as $type)
                             <option value="{{ $type->id }}">{{ $type->name }}</option>
                         @endforeach
                     </select>
-                </div>
+                </div> -->
                 <div class="col-md-6">
                     <div class="input-group">
                         <input type="text" class="form-control" placeholder="Search documents..." id="searchInput">

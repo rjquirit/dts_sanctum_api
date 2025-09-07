@@ -107,7 +107,9 @@ export async function loadDocs(tableBodySelector, url = '/api/documents') {
         console.log('Fetching Docs from API...');
         const docs = await API.get(url, {
             headers: {
-                'Authorization': `Bearer ${token}`
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
             }
         });
         
@@ -371,6 +373,19 @@ export function bindDocsActions(formSelector, tableBodySelector) {
             }
         } finally {
             hideLoading(e.target);
+        }
+    });
+
+    // View document click handler
+    document.addEventListener('click', function(e) {
+        const viewBtn = e.target.closest('.view');
+        if (viewBtn) {
+            e.preventDefault();
+            const row = viewBtn.closest('tr');
+            const trackingNumber = row.querySelector('td:first-child').textContent.trim();
+            
+            // Redirect to find.blade.php with tracking number as URL parameter
+            window.location.href = `/find?tracking=${encodeURIComponent(trackingNumber)}`;
         }
     });
 }

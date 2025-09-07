@@ -25,11 +25,27 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentCamera = 'environment'; // 'user' for front, 'environment' for back
     let scanInterval = null;
 
+    // Check for tracking number in URL parameters on page load
+    const urlParams = new URLSearchParams(window.location.search);
+    const trackingNumber = urlParams.get('tracking');
+    
+    if (trackingNumber) {
+        trackingInput.value = trackingNumber;
+        // Small delay to ensure DOM is fully loaded before triggering search
+        setTimeout(() => {
+            searchDocument(trackingNumber);
+        }, 100);
+    }
+
     // Search button event listener
     searchBtn.addEventListener('click', function() {
         const trackingNumber = trackingInput.value.trim();
         if (trackingNumber) {
             searchDocument(trackingNumber);
+            // Update URL without page reload
+            const newUrl = new URL(window.location);
+            newUrl.searchParams.set('tracking', trackingNumber);
+            window.history.pushState({}, '', newUrl);
         } else {
             showError('Please enter a tracking number');
         }
