@@ -3,328 +3,504 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\Docmain;
-use App\Models\Doctypes;
-use App\Models\Sections;
-use App\Models\Offices;
-use App\Models\User;
-use App\Models\Docroutes;
+use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Auth;
-use DB;
 
 class DocmainController extends Controller
 {
-    public function index(Request $request)
-    {
-        $authUser = Auth::user();
-        $search = $request->input('search', '');
-        $status = $request->input('status', 'is_done');
-        $isUserDocs = $authUser->user_type == 'teacher' ? 'personal' : $request->input('scope', 'personal');
-
-        $filters = [
-            'personal' => [
-                'route_column' => 'route_touser_id',
-                'origin_column' => 'origin_userid',
-                'receivedby_column' => 'receivedby_id',
-                'scope_value' => 'personal',
-                'auth_value' => $authUser->id
-            ],
-            'office' => [
-                'route_column' => 'route_tosection_id',
-                'origin_column' => 'origin_section',
-                'receivedby_column' => 'receivedby_id',
-                'scope_value' => 'office',
-                'auth_value' => $authUser->section_id
-            ]
-        ];
-
-        $filter = $filters[$isUserDocs] ?? $filters['personal'];
-
-        $latestActions = Docroutes::selectRaw('MAX(action_id) as max_action_id')
-            ->groupBy('document_id');
-
-        $maindocQuery = Docroutes::with(['document.doctype','document.origin_office', 'document.origin_section','toUser'])
-            ->whereIn('action_id', function ($query) use ($latestActions) {
-                $query->select('max_action_id')->fromSub($latestActions, 'latest');
-            });
-
-        if ($search) {
-            $maindocQuery->whereExists(function ($query) use ($search) {
-                $query->select(DB::raw(1))
-                    ->from('dts_docs')
-                    ->whereColumn('dts_docs.doc_id', 'dts_docroutes.document_id')
-                    ->where(function ($q) use ($search) {
-                        $q->where('dts_docs.doc_tracking', 'like', "%{$search}%")
-                        ->orWhere('dts_docs.docs_description', 'like', "%{$search}%")
-                        ->orWhereExists(function ($subquery) use ($search) {
-                            $subquery->select(DB::raw(1))
-                                ->from('dts_docstype')
-                                ->whereColumn('dts_docstype.doctype_id', 'dts_docs.doc_type_id')
-                                ->where('dts_docstype.doctype_description', 'like', "%{$search}%");
-                        });
-                    });
-            });
-        }
-
-        if ($status !== 'all') {
-            $maindocQuery->whereExists(function ($query) use ($status, $filter) {
-                $query->select(DB::raw(1))
-                    ->from('dts_docs')
-                    ->whereColumn('dts_docs.doc_id', 'dts_docroutes.document_id');
-
-                if ($status === 'is_done') {
-                    $query->where($filter['origin_column'], $filter['auth_value']);
-                } elseif ($status === 'is_pending') {
-                    $query->where('done', 0)
-                        ->where($filter['receivedby_column'], '!=', 0)
-                        ->where('dts_docroutes.' . $filter['route_column'], $filter['auth_value']);
-                } else {
-                    $query->where($filter['receivedby_column'], 0)
-                        ->where('dts_docroutes.' . $filter['route_column'], $filter['auth_value']);
-                }
-            });
-        }
-
-        $maindoc = $maindocQuery
-            ->orderBy('datetime_forwarded', 'DESC')
-            ->orderByDesc('action_id')
-            ->paginate(10);
-
-        $totals = (object) [
-            'total_docs' => Docmain::where($filter['origin_column'], $filter['auth_value'])->count(),
-            'total_incoming' => Docroutes::where($filter['route_column'], $filter['auth_value'])
-                                ->where('receivedby_id', 0)
-                                ->distinct('document_id')
-                                ->count('document_id'),
-            'total_pending' => Docroutes::where($filter['route_column'], $filter['auth_value'])
-                                ->where('receivedby_id', '!=', 0)
-                                ->where('route_accomplished', 0)
-                                ->distinct('document_id')
-                                ->count('document_id')
-        ];
-
-        return response()->json([
-            'maindoc' => $maindoc,
-            'filters' => ['search' => $search],
-            'is_user_docs' => $filter['scope_value'],
-            'total_incoming' => $totals->total_incoming ?? 0,
-            'total_pending' => $totals->total_pending ?? 0,
-            'total_docs' => $totals->total_docs ?? 0,
-            'status' => $status
-        ]);
-    }
-
-    public function create()
-    {
-        $authUser = Auth::user();
-        $division = Offices::when($authUser->division_code != 1, function($query) use ($authUser) {
-            return $query->where('sch_id', $authUser->division_code)
-                ->orWhere('district', $authUser->division_code)
-                ->orWhere('sch_id', 1);
-        })->get();
-
-        $divisiondistrict = $authUser->division_code != 1 
-            ? $division->where('sch_id', $authUser->division_code)->pluck('district')->toArray()
-            : [];
-
-        $sections = Sections::when($authUser->division_code != 1, function($query) use ($authUser, $divisiondistrict) {
-            return $query->where('active', 1)
-                ->where('office_id', $authUser->division_code)
-                ->orWhereIn('office_id', $divisiondistrict)
-                ->orWhere('office_id', 1);
-        })->get();
-
-        $employees = User::when($authUser->division_code != 1, function($query) use ($authUser, $division) {
-            $divisionid = $division->where('district', $authUser->division_code)->pluck('sch_id')->toArray();
-            $divisiondistrict = $division->where('sch_id', $authUser->division_code)->pluck('district')->toArray();
-            
-            return $query->where('division_code', $authUser->division_code)
-                ->orWhereIn('division_code', $divisionid)
-                ->orWhereIn('division_code', $divisiondistrict)
-                ->orWhere('division_code', 1);
-        })
-        ->where('active', 1)
-        ->get()
-        ->map(function ($employee) {
-            return [
-                'id' => $employee->id,
-                'name' => $employee->name,
-                'email' => $employee->email,
-                'active' => $employee->active,
-                'section_id' => $employee->section_id,
-                'division_code' => $employee->division_code,
-                'user_type' => $employee->user_type,
-            ];
-        });
-
-        return response()->json([
-            'doctypes' => Doctypes::where('active', 1)->get(),
-            'divisions' => $division,
-            'sections' => $sections,
-            'employee' => $employees,
-        ]);
-    }
-
-    public function store(Request $request)
+    public function index(Request $request): JsonResponse
     {
         try {
-            $request->validate([
-                'doc_type_id' => 'required|exists:dts_docstype,doctype_id',
-                'docs_description' => 'required|string',
-                'receiving_section' => 'required|exists:dts_sections,section_id',
-                'employee' => 'required',
-                'actions_needed' => 'required|string',
+            // Handle both auth:sanctum and VerifySanctumToken middleware
+            $user = auth()->user();
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Please log in to access documents'
+                ], 401);
+            }
+
+            $query = Docmain::with(['doctype', 'origin_section', 'origin_office', 'routes']);
+
+            // Toggle-based filtering: false = office, true = personal
+            if ($request->has('toggle')) {
+                if ($request->toggle === 'true' || $request->toggle === true) {
+                    // Personal documents: filter by acceptedby_userid = current user's id
+                    $query->where('acceptedby_userid', $user->id);
+                } else {
+                    // Office documents: filter by receiving_section = current user's section_id
+                    $query->where('receiving_section', $user->section_id);
+                }
+            } else {
+                // Default behavior: show office documents
+                $query->where('receiving_section', $user->section_id);
+            }
+            Log::info("Forwarded Docs Query", [
+                'sql' => $query->toSql(),
+                'bindings' => $query->getBindings(),
+            ]);
+            
+            // Search functionality
+            if ($request->has('search') && !empty($request->search)) {
+                $searchTerm = $request->search;
+                $query->where(function ($q) use ($searchTerm) {
+                    $q->where('doc_tracking', 'LIKE', "%{$searchTerm}%")
+                      ->orWhere('docs_description', 'LIKE', "%{$searchTerm}%")
+                      ->orWhere('origin_fname', 'LIKE', "%{$searchTerm}%")
+                      ->orWhere('origin_school', 'LIKE', "%{$searchTerm}%")
+                      ->orWhere('actions_needed', 'LIKE', "%{$searchTerm}%")
+                      ->orWhere('acct_payee', 'LIKE', "%{$searchTerm}%")
+                      ->orWhere('acct_particulars', 'LIKE', "%{$searchTerm}%")
+                      ->orWhere('final_actions_made', 'LIKE', "%{$searchTerm}%")
+                      ->orWhere('deactivate_reason', 'LIKE', "%{$searchTerm}%");
+                });
+            }
+
+            // Filter by active status
+            if ($request->has('active')) {
+                $query->where('active', $request->active);
+            }
+
+            // Filter by document type
+            if ($request->has('doc_type_id')) {
+                $query->where('doc_type_id', $request->doc_type_id);
+            }
+
+            // Filter by origin section
+            if ($request->has('origin_section')) {
+                $query->where('origin_section', $request->origin_section);
+            }
+
+            // Filter by done status
+            if ($request->has('done')) {
+                $query->where('done', $request->done);
+            }
+
+            // Date range filter for datetime_posted
+            if ($request->has('date_from') && $request->has('date_to')) {
+                $query->whereBetween('datetime_posted', [
+                    $request->date_from . ' 00:00:00',
+                    $request->date_to . ' 23:59:59'
+                ]);
+            }
+
+            // Sorting
+            $sortBy = $request->get('sort_by', 'doc_id');
+            $sortOrder = $request->get('sort_order', 'desc');
+            $query->orderBy($sortBy, $sortOrder);
+
+            // Pagination
+            $perPage = $request->get('per_page', 15);
+            $documents = $query->paginate($perPage);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Documents retrieved successfully',
+                'data' => $documents
             ]);
 
-            $document = Docmain::create([
-                'track_issuedby_userid' => auth()->id(),
-                'doc_type_id' => $request->doc_type_id,
-                'docs_description' => trim($request->docs_description),
-                'origin_name' => auth()->user()->name,
-                'origin_userid' => auth()->id(),
-                'origin_section' => auth()->user()->section_id,
-                'receiving_section' => $request->receiving_section,
-                'actions_needed' => trim($request->actions_needed),
-                'datetime_posted' => now(),
-                'active' => 1,
-            ]);
-
-            $fromSection = Sections::where('section_id', auth()->user()->section_id)->first();
-            $toSection = Sections::where('section_id', $request->receiving_section)->first();
-
-            $doc_routes = Docroutes::create([
-                'document_id' => $document->doc_id,
-                'route_fromuser_id' => auth()->id(),
-                'route_from' => auth()->user()->name,
-                'route_fromsection_id' => auth()->user()->section_id,
-                'route_fromsection' => $fromSection->section_description,
-                'route_tosection_id' => $request->receiving_section,
-                'route_tosection' => $toSection->section_description,
-                'route_touser_id' => $request->employee,
-                'route_purpose' => trim($request->actions_needed),
-                'datetime_forwarded' => now(),
-                'active' => 1,
+        } catch (\Exception $e) {
+            Log::error('Error in DocmainController@index', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+                'user_id' => $request->user()->id ?? null,
             ]);
 
             return response()->json([
+                'success' => false,
+                'message' => 'Error retrieving documents',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Store a newly created document.
+     */
+    public function store(Request $request): JsonResponse
+    {
+        try {
+            $validatedData = $request->validate([
+                'track_issuedby_userid' => 'required|integer',
+                'doc_type_id' => 'required|integer',
+                'tempdocs_id' => 'nullable|integer',
+                'docs_description' => 'required|string',
+                'origin_fname' => 'nullable|string|max:255',
+                'origin_userid' => 'nullable|integer',
+                'origin_school_id' => 'nullable|integer',
+                'origin_school' => 'nullable|string|max:255',
+                'origin_section' => 'nullable|integer',
+                'receiving_section' => 'nullable|integer',
+                'actions_needed' => 'nullable|string|max:255',
+                'datetime_posted' => 'required|date',
+                'datetime_accepted' => 'nullable|date',
+                'acceptedby_userid' => 'nullable|integer',
+                'acct_dvnum' => 'nullable|string|max:255',
+                'acct_payee' => 'nullable|string|max:255',
+                'acct_particulars' => 'nullable|string|max:255',
+                'acct_amount' => 'nullable|numeric',
+                'final_actions_made' => 'nullable|string',
+                'done' => 'nullable|integer|in:0,1',
+                'updatedby_id' => 'nullable|integer',
+                'archive_id' => 'nullable|integer',
+                'active' => 'nullable|integer|in:0,1',
+                'deactivate_reason' => 'nullable|string|max:255',
+                'tags' => 'nullable|json',
+                'additional_receivers' => 'nullable|json'
+            ]);
+
+            $document = Docmain::create($validatedData);
+
+            return response()->json([
+                'success' => true,
                 'message' => 'Document created successfully',
-                'action_id' => $doc_routes->action_id,
-                'document' => $document
+                'data' => $document->load(['doctype', 'origin_section', 'origin_office'])
             ], 201);
 
-        } catch (\Exception $e) {
-            Log::error('Error creating document', [
-                'error_message' => $e->getMessage(),
-                'error_trace' => $e->getTraceAsString(),
-                'request_data' => $request->all(),
-                'user_id' => auth()->id()
-            ]);
-
+        } catch (ValidationException $e) {
             return response()->json([
-                'message' => 'Failed to create document',
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error creating document',
                 'error' => $e->getMessage()
             ], 500);
         }
     }
 
-    public function show($id)
-    {
-        $route = Docroutes::with(['document.doctype'])
-            ->where('action_id', $id)
-            ->orderBy('action_id', 'desc')
-            ->first();
-
-        if (!$route || !$route->document) {
-            return response()->json(['message' => 'Document not found'], 404);
-        }
-
-        $document = $route->document;
-        $sender = User::with('section', 'office')
-            ->where('id', $document->origin_userid)
-            ->first();
-
-        $receiver = User::with('section')
-            ->where('id', $document->receiving_userid)
-            ->first();
-
-        $document->sender = [
-            'name' => $sender->name,
-            'section' => $sender->section,
-            'office' => $sender->office
-        ];
-        
-        $document->receiver = $receiver;
-        $document->formatted_date = date('F j, Y g:i A', strtotime($document->datetime_posted));
-
-        return response()->json([
-            'docroutes' => $route,
-            'document' => $document
-        ]);
-    }
-
-    public function updateStatus(Request $request)
+    /**
+     * Display the specified document.
+     */
+    public function show($id): JsonResponse
     {
         try {
-            $doc = Docmain::where("doc_id", $request->id)->firstOrFail();
-            $route = DocRoutes::where("action_id", $request->action_id)->firstOrFail();
-
-            $route->route_accomplished = 2;
-            $route->save();
-            $doc->done = 1;
-            $doc->save();
+            $document = Docmain::with(['doctype', 'origin_section', 'origin_office', 'routes'])
+                ->findOrFail($id);
 
             return response()->json([
-                'message' => 'Document status updated successfully',
-                'document' => $doc,
-                'route' => $route
+                'success' => true,
+                'message' => 'Document retrieved successfully',
+                'data' => $document
             ]);
+
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Document not found'
+            ], 404);
 
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Failed to update document status',
+                'success' => false,
+                'message' => 'Error retrieving document',
                 'error' => $e->getMessage()
             ], 500);
         }
     }
 
-    public function update(Request $request, $id, $action_id)
+    /**
+     * Update the specified document.
+     */
+    public function update(Request $request, $id): JsonResponse
     {
         try {
-            $document = Docmain::where('doc_id', $id)->firstOrFail();
-            $route = DocRoutes::where('action_id', $action_id)->firstOrFail();
-            $section = Sections::where('section_id', $request->receiving_section)->firstOrFail();
+            $document = Docmain::findOrFail($id);
 
             $validatedData = $request->validate([
-                'doc_type_id' => 'required',
-                'docs_description' => 'required',
-                'actions_needed' => 'required',
-                'receiving_section' => 'required',
-                'employee' => 'required',
+                'track_issuedby_userid' => 'sometimes|integer',
+                'doc_type_id' => 'sometimes|integer',
+                'tempdocs_id' => 'nullable|integer',
+                'docs_description' => 'sometimes|string',
+                'origin_fname' => 'nullable|string|max:255',
+                'origin_userid' => 'nullable|integer',
+                'origin_school_id' => 'nullable|integer',
+                'origin_school' => 'nullable|string|max:255',
+                'origin_section' => 'nullable|integer',
+                'receiving_section' => 'nullable|integer',
+                'actions_needed' => 'nullable|string|max:255',
+                'datetime_posted' => 'sometimes|date',
+                'datetime_accepted' => 'nullable|date',
+                'acceptedby_userid' => 'nullable|integer',
+                'acct_dvnum' => 'nullable|string|max:255',
+                'acct_payee' => 'nullable|string|max:255',
+                'acct_particulars' => 'nullable|string|max:255',
+                'acct_amount' => 'nullable|numeric',
+                'final_actions_made' => 'nullable|string',
+                'done' => 'nullable|integer|in:0,1',
+                'updatedby_id' => 'nullable|integer',
+                'archive_id' => 'nullable|integer',
+                'active' => 'nullable|integer|in:0,1',
+                'deactivate_reason' => 'nullable|string|max:255',
+                'tags' => 'nullable|json',
+                'additional_receivers' => 'nullable|json'
+            ]);
+
+            // Add updated timestamp and user
+            $validatedData['datetime_updated'] = now();
+            $validatedData['updatedby_id'] = auth()->id();
+
+            $document->update($validatedData);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Document updated successfully',
+                'data' => $document->load(['doctype', 'origin_section', 'origin_office'])
+            ]);
+
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Document not found'
+            ], 404);
+
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error updating document',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Remove the specified document from storage.
+     */
+    public function destroy($id): JsonResponse
+    {
+        try {
+            $document = Docmain::findOrFail($id);
+            $document->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Document deleted successfully'
+            ]);
+
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Document not found'
+            ], 404);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error deleting document',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Soft delete document by setting active to 0.
+     */
+    public function deactivate(Request $request, $id): JsonResponse
+    {
+        try {
+            $document = Docmain::findOrFail($id);
+
+            $validatedData = $request->validate([
+                'deactivate_reason' => 'required|string|max:255'
             ]);
 
             $document->update([
-                'doc_type_id' => $validatedData['doc_type_id'],
-                'docs_description' => $validatedData['docs_description'],
-                'actions_needed' => $validatedData['actions_needed'],
-            ]);
-
-            $route->update([
-                'route_tosection_id' => $validatedData['receiving_section'],
-                'route_touser_id' => $validatedData['employee'],
-                'route_tosection' => $section->section_description
+                'active' => 0,
+                'deactivate_reason' => $validatedData['deactivate_reason'],
+                'datetime_updated' => now(),
+                'updatedby_id' => auth()->id()
             ]);
 
             return response()->json([
-                'message' => 'Document updated successfully',
-                'document' => $document,
-                'route' => $route
+                'success' => true,
+                'message' => 'Document deactivated successfully',
+                'data' => $document
+            ]);
+
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Document not found'
+            ], 404);
+
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error deactivating document',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Restore deactivated document.
+     */
+    public function activate($id): JsonResponse
+    {
+        try {
+            $document = Docmain::findOrFail($id);
+
+            $document->update([
+                'active' => 1,
+                'deactivate_reason' => '',
+                'datetime_updated' => now(),
+                'updatedby_id' => auth()->id()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Document activated successfully',
+                'data' => $document
+            ]);
+
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Document not found'
+            ], 404);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error activating document',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Mark document as done.
+     */
+    public function markDone(Request $request, $id): JsonResponse
+    {
+        try {
+            $document = Docmain::findOrFail($id);
+
+            $validatedData = $request->validate([
+                'final_actions_made' => 'required|string'
+            ]);
+
+            $document->update([
+                'done' => 1,
+                'final_actions_made' => $validatedData['final_actions_made'],
+                'datetime_updated' => now(),
+                'updatedby_id' => auth()->id()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Document marked as done successfully',
+                'data' => $document
+            ]);
+
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Document not found'
+            ], 404);
+
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error marking document as done',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Accept document.
+     */
+    public function accept($id): JsonResponse
+    {
+        try {
+            $document = Docmain::findOrFail($id);
+
+            $document->update([
+                'datetime_accepted' => now(),
+                'acceptedby_userid' => auth()->id(),
+                'datetime_updated' => now(),
+                'updatedby_id' => auth()->id()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Document accepted successfully',
+                'data' => $document
+            ]);
+
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Document not found'
+            ], 404);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error accepting document',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get document statistics.
+     */
+    public function stats(): JsonResponse
+    {
+        try {
+            $stats = [
+                'total_documents' => Docmain::count(),
+                'active_documents' => Docmain::where('active', 1)->count(),
+                'inactive_documents' => Docmain::where('active', 0)->count(),
+                'done_documents' => Docmain::where('done', 1)->count(),
+                'pending_documents' => Docmain::where('done', 0)->count(),
+                'accepted_documents' => Docmain::whereNotNull('datetime_accepted')->count(),
+                'unaccepted_documents' => Docmain::whereNull('datetime_accepted')->count(),
+            ];
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Document statistics retrieved successfully',
+                'data' => $stats
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Failed to update document',
+                'success' => false,
+                'message' => 'Error retrieving statistics',
                 'error' => $e->getMessage()
             ], 500);
         }

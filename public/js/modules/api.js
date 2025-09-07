@@ -14,8 +14,7 @@ const cache = new Map();
 const defaultOptions = {
     credentials: 'include',
     headers: {
-        ...API_CONFIG.headers,
-        'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        ...API_CONFIG.headers
     }
 };
 
@@ -169,6 +168,23 @@ async function retryRequest(endpoint, options, attempt = 1) {
 }
 
 /**
+ * Get current auth token
+ */
+function getAuthToken() {
+    // First check localStorage for auth_token
+    const token = localStorage.getItem('auth_token');
+    if (token) return token;
+    
+    // Fallback to meta tag
+    const tokenMeta = document.querySelector('meta[name="api-token"]');
+    if (tokenMeta) {
+        return tokenMeta.getAttribute('content');
+    }
+    
+    return '';
+}
+
+/**
  * Make an API request
  */
 async function apiRequest(endpoint, options = {}) {
@@ -198,7 +214,8 @@ async function apiRequest(endpoint, options = {}) {
         ...options,
         headers: {
             ...defaultOptions.headers,
-            ...options.headers
+            ...options.headers,
+            'Authorization': `Bearer ${getAuthToken()}`
         }
     };
 

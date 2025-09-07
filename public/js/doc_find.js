@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     const trackingInput = document.getElementById('trackingNumber');
     const searchBtn = document.getElementById('searchBtn');
+    const scanBtn = document.getElementById('scanBtn');
     const printBtn = document.getElementById('printBtn');
     const loading = document.getElementById('loading');
     const errorMessage = document.getElementById('errorMessage');
@@ -10,7 +11,19 @@ document.addEventListener('DOMContentLoaded', function() {
     const barcodeContainer = document.getElementById('barcodeContainer');
     const qrCodeContainer = document.getElementById('qrCodeContainer');
 
+    // Scanner elements
+    const scannerModal = document.getElementById('scannerModal');
+    const closeScannerBtn = document.getElementById('closeScannerBtn');
+    const toggleScannerBtn = document.getElementById('toggleScannerBtn');
+    const switchCameraBtn = document.getElementById('switchCameraBtn');
+    const scannerVideo = document.getElementById('scanner-video');
+    const scannerResult = document.getElementById('scannerResult');
+
     let currentDocument = null;
+    let stream = null;
+    let scanning = false;
+    let currentCamera = 'environment'; // 'user' for front, 'environment' for back
+    let scanInterval = null;
 
     // Search button event listener
     searchBtn.addEventListener('click', function() {
@@ -19,6 +32,37 @@ document.addEventListener('DOMContentLoaded', function() {
             searchDocument(trackingNumber);
         } else {
             showError('Please enter a tracking number');
+        }
+    });
+
+    // Scan button event listener
+    scanBtn.addEventListener('click', function() {
+        openScanner();
+    });
+
+    // Scanner modal event listeners
+    closeScannerBtn.addEventListener('click', closeScanner);
+    scannerModal.addEventListener('click', function(e) {
+        if (e.target === scannerModal) {
+            closeScanner();
+        }
+    });
+
+    // Toggle scanner
+    toggleScannerBtn.addEventListener('click', function() {
+        if (scanning) {
+            stopScanning();
+        } else {
+            startScanning();
+        }
+    });
+
+    // Switch camera
+    switchCameraBtn.addEventListener('click', function() {
+        currentCamera = currentCamera === 'environment' ? 'user' : 'environment';
+        if (scanning) {
+            stopScanning();
+            setTimeout(() => startScanning(), 500);
         }
     });
 
@@ -38,13 +82,270 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Search document function
+    // Scanner Functions
+    function openScanner() {
+        scannerModal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+        updateScannerResult('Initializing camera...', '');
+        
+        // Auto-start scanner after modal opens
+        setTimeout(() => {
+            startScanning();
+        }, 300);
+    }
+
+    function closeScanner() {
+        stopScanning();
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+            stream = null;
+        }
+        scannerModal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+
+    async function startScanning() {
+        try {
+            updateScannerResult('Starting camera...', '');
+            
+            // Stop existing stream
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+
+            // Request camera access
+            const constraints = {
+                video: {
+                    facingMode: currentCamera,
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                }
+            };
+
+            stream = await navigator.mediaDevices.getUserMedia(constraints);
+            scannerVideo.srcObject = stream;
+            
+            // Wait for video to load
+            await new Promise((resolve) => {
+                scannerVideo.addEventListener('loadedmetadata', resolve, { once: true });
+            });
+
+            scanning = true;
+            toggleScannerBtn.innerHTML = '<i class="fas fa-stop"></i> Stop Scanner';
+            toggleScannerBtn.classList.add('active');
+            updateScannerResult('Scanner active - Position code in camera view', '');
+
+            // Start continuous scanning
+            startContinuousScanning();
+
+        } catch (error) {
+            console.error('Error starting camera:', error);
+            handleCameraError(error);
+        }
+    }
+
+    function stopScanning() {
+        scanning = false;
+        
+        if (scanInterval) {
+            clearInterval(scanInterval);
+            scanInterval = null;
+        }
+        
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+            stream = null;
+        }
+        
+        scannerVideo.srcObject = null;
+        
+        toggleScannerBtn.innerHTML = '<i class="fas fa-play"></i> Start Scanner';
+        toggleScannerBtn.classList.remove('active');
+        updateScannerResult('Scanner stopped', '');
+    }
+
+    function startContinuousScanning() {
+        if (!scanning) return;
+
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+
+        scanInterval = setInterval(() => {
+            if (!scanning || !scannerVideo.videoWidth || !scannerVideo.videoHeight) {
+                return;
+            }
+
+            // Set canvas size to match video
+            canvas.width = scannerVideo.videoWidth;
+            canvas.height = scannerVideo.videoHeight;
+
+            // Draw current video frame to canvas
+            context.drawImage(scannerVideo, 0, 0, canvas.width, canvas.height);
+
+            // Try to scan QR code first
+            scanQRCode(canvas).then(result => {
+                if (result) {
+                    handleScanResult(result, 'QR Code');
+                    return;
+                }
+                
+                // If no QR code found, try barcode scanning
+                return scanBarcode(canvas);
+            }).then(result => {
+                if (result) {
+                    handleScanResult(result, 'Barcode');
+                }
+            }).catch(error => {
+                // Ignore scanning errors - they're expected when no code is visible
+            });
+
+        }, 500); // Scan every 500ms
+    }
+
+    // QR Code scanning using jsQR library
+    async function scanQRCode(canvas) {
+        try {
+            // Use jsQR if available
+            if (typeof jsQR !== 'undefined') {
+                const context = canvas.getContext('2d');
+                const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                    inversionAttempts: "dontInvert",
+                });
+                return code ? code.data : null;
+            }
+            
+            // Fallback: Use ZXing library
+            if (typeof ZXing !== 'undefined') {
+                const codeReader = new ZXing.BrowserQRCodeReader();
+                try {
+                    const result = await codeReader.decodeFromCanvas(canvas);
+                    return result.text;
+                } catch (error) {
+                    return null;
+                }
+            }
+            
+            return null;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    // Barcode scanning using QuaggaJS
+    async function scanBarcode(canvas) {
+        return new Promise((resolve) => {
+            if (typeof Quagga === 'undefined') {
+                resolve(null);
+                return;
+            }
+
+            try {
+                Quagga.decodeSingle({
+                    decoder: {
+                        readers: [
+                            "code_128_reader",
+                            "ean_reader",
+                            "ean_8_reader",
+                            "code_39_reader",
+                            "code_39_vin_reader",
+                            "codabar_reader",
+                            "upc_reader",
+                            "upc_e_reader",
+                            "i2of5_reader"
+                        ]
+                    },
+                    locate: true,
+                    src: canvas.toDataURL()
+                }, function(result) {
+                    if (result && result.codeResult) {
+                        resolve(result.codeResult.code);
+                    } else {
+                        resolve(null);
+                    }
+                });
+            } catch (error) {
+                resolve(null);
+            }
+        });
+    }
+
+    function handleScanResult(code, type) {
+        if (!code || code.trim() === '' || !scanning) {
+            return;
+        }
+
+        console.log(`${type} detected:`, code);
+        
+        // Stop scanning to prevent multiple detections
+        scanning = false;
+        
+        // Update the search input
+        trackingInput.value = code.trim();
+        
+        // Show success message
+        updateScannerResult(`✅ ${type} detected: ${code}`, 'success');
+        
+        // Auto-close scanner and trigger search after a short delay
+        setTimeout(() => {
+            closeScanner();
+            searchBtn.click();
+        }, 1500);
+    }
+
+    function updateScannerResult(message, type = '') {
+        if (scannerResult) {
+            scannerResult.textContent = message;
+            scannerResult.className = `scanner-result ${type}`;
+        }
+    }
+
+    function handleCameraError(error) {
+        let message = 'Camera access denied or unavailable.';
+        
+        if (error.name === 'NotAllowedError') {
+            message = 'Camera permission denied. Please allow camera access and try again.';
+        } else if (error.name === 'NotFoundError') {
+            message = 'No camera found on this device.';
+        } else if (error.name === 'NotSupportedError') {
+            message = 'Camera not supported in this browser. Please use Chrome, Firefox, or Safari.';
+        } else if (error.name === 'NotReadableError') {
+            message = 'Camera is being used by another application.';
+        } else if (error.name === 'OverconstrainedError') {
+            message = 'Camera constraints not satisfied. Trying with basic settings...';
+            // Retry with basic constraints
+            setTimeout(() => {
+                currentCamera = 'environment';
+                startScanning();
+            }, 1000);
+            return;
+        }
+        
+        updateScannerResult(message, 'error');
+    }
+
+    // Load required libraries
+    function loadScannerLibraries() {
+        const libraries = [
+            {
+                url: 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js',
+                name: 'jsQR'
+            },
+            {
+                url: 'https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js',
+                name: 'Quagga'
+            }
+        ];
+
+        return Promise.allSettled(libraries.map(lib => loadScript(lib.url)));
+    }
+
+    // Your existing search document function
     function searchDocument(trackingNumber) {
         showLoading(true);
         hideError();
         hideDocumentContent();
 
-        // Make API call to your specific endpoint
         fetch(`/api/docmain/track/${trackingNumber}`, {
             method: 'GET',
             headers: {
@@ -79,7 +380,6 @@ document.addEventListener('DOMContentLoaded', function() {
     function displayDocument(data) {
         const document = data.document;
         
-        // Populate document details
         documentDetailsContent.innerHTML = `
             <div class="detail-row">
                 <div class="detail-label">Document ID:</div>
@@ -127,13 +427,10 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         `;
 
-        // Populate timeline
         populateTimeline(data.routes || []);
-
         showDocumentContent();
     }
 
-    // Populate timeline with route information
     function populateTimeline(routes) {
         if (!routes || routes.length === 0) {
             documentTimeline.innerHTML = '<p class="text-center text-muted">No route information available</p>';
@@ -142,11 +439,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
         let timelineHTML = '';
         routes.forEach((route, index) => {
-            const isActive = !route.route_accomplished; // Mark unaccomplished routes as active
+            const isActive = !route.route_accomplished;
             const isAccepted = route.datetime_route_accepted !== "-000001-11-30T00:00:00.000000Z";
             const hasActions = route.actions_datetime !== "-000001-11-30T00:00:00.000000Z";
             
-            // Determine the status based on route progress
             let statusText = 'Forwarded';
             let statusClass = 'forwarded';
             
@@ -186,18 +482,13 @@ document.addEventListener('DOMContentLoaded', function() {
         documentTimeline.innerHTML = timelineHTML;
     }
 
-    // Generate barcode and QR code
+    // Utility functions
     function generateCodes(trackingNumber) {
-        // Generate Barcode
         generateBarcode(trackingNumber);
-        
-        // Generate QR Code
         generateQRCode(trackingNumber);
     }
 
-    // Generate barcode using JsBarcode library
     function generateBarcode(data) {
-        // Check if JsBarcode is available
         if (typeof JsBarcode !== 'undefined') {
             const canvas = document.createElement('canvas');
             barcodeContainer.innerHTML = '';
@@ -214,10 +505,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             } catch (error) {
                 barcodeContainer.innerHTML = '<p class="text-danger">Error generating barcode</p>';
-                console.error('Barcode generation error:', error);
             }
         } else {
-            // Fallback - load JsBarcode from CDN
             loadScript('https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.5/JsBarcode.all.min.js')
                 .then(() => generateBarcode(data))
                 .catch(() => {
@@ -226,18 +515,15 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Generate QR code using qrcode-generator library (lighter alternative)
     function generateQRCode(data) {
         qrCodeContainer.innerHTML = '';
         
         try {
-            // Use qrcode-generator library (lighter than qrcode.js)
             if (typeof qrcode !== 'undefined') {
                 const qr = qrcode(0, 'M');
                 qr.addData(data);
                 qr.make();
                 
-                // Create QR code as SVG for better print quality
                 const qrSvg = qr.createSvgTag({
                     cellSize: 4,
                     margin: 4,
@@ -246,7 +532,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 qrCodeContainer.innerHTML = qrSvg;
             } else {
-                // Fallback: Create simple QR code using online service for display
                 const qrImg = document.createElement('img');
                 qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(data)}`;
                 qrImg.style.width = '150px';
@@ -255,8 +540,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 qrCodeContainer.appendChild(qrImg);
             }
         } catch (error) {
-            console.error('QR code generation error:', error);
-            // Fallback: Create simple QR code using online service
             const qrImg = document.createElement('img');
             qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(data)}`;
             qrImg.style.width = '150px';
@@ -269,7 +552,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Load external script dynamically
     function loadScript(src) {
         return new Promise((resolve, reject) => {
             const script = document.createElement('script');
@@ -280,7 +562,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Utility functions
     function showLoading(show) {
         loading.style.display = show ? 'block' : 'none';
     }
@@ -288,7 +569,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function showError(message) {
         errorMessage.textContent = message;
         errorMessage.style.display = 'block';
-        setTimeout(() => hideError(), 5000); // Auto-hide after 5 seconds
+        setTimeout(() => hideError(), 5000);
     }
 
     function hideError() {
@@ -316,7 +597,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 minute: '2-digit'
             });
         } catch (error) {
-            return dateString; // Return original if parsing fails
+            return dateString;
         }
     }
 
@@ -349,7 +630,6 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // Create print header
         printHeader.innerHTML = `
             <div class="print-header">
                 <h2>Document Tracking Report</h2>
@@ -358,7 +638,6 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         `;
 
-        // Clone content for printing
         printContent.innerHTML = `
             <div class="print-codes">
                 ${barcodeContainer.innerHTML}
@@ -374,16 +653,11 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         `;
 
-        // Add print-specific styles
         const style = document.createElement('style');
         style.textContent = `
             @media print {
-                body * {
-                    visibility: hidden;
-                }
-                #printContainer, #printContainer * {
-                    visibility: visible;
-                }
+                body * { visibility: hidden; }
+                #printContainer, #printContainer * { visibility: visible; }
                 #printContainer {
                     position: absolute;
                     left: 0;
@@ -402,39 +676,41 @@ document.addEventListener('DOMContentLoaded', function() {
                     justify-content: space-around;
                     margin-bottom: 20px;
                 }
-                .print-details, .print-timeline {
-                    margin-bottom: 20px;
-                }
-                .timeline-item {
-                    page-break-inside: avoid;
-                }
-                .btn-print {
-                    display: none;
-                }
+                .print-details, .print-timeline { margin-bottom: 20px; }
+                .timeline-item { page-break-inside: avoid; }
+                .btn-print { display: none; }
             }
         `;
         document.head.appendChild(style);
 
-        // Trigger print
         window.print();
 
-        // Remove the style element after printing
         setTimeout(() => {
             document.head.removeChild(style);
         }, 1000);
     }
 
-    // Remove the unused generatePrintHTML function since we're now using direct print
-    // function generatePrintHTML() { ... } - REMOVED
+    // Initialize scanner libraries on load
+    loadScannerLibraries().then(() => {
+        console.log('Scanner libraries loaded');
+    }).catch(error => {
+        console.warn('Some scanner libraries failed to load:', error);
+    });
 
-    // Load barcode and QR code libraries on page load
+    // Load barcode and QR code generation libraries
     Promise.all([
         loadScript('https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.5/JsBarcode.all.min.js'),
         loadScript('https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js').catch(() => {
-            // Fallback to qrcode-generator library
             return loadScript('https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js');
         })
     ]).catch(error => {
-        console.warn('Some code generation libraries failed to load, using fallbacks:', error);
+        console.warn('Some code generation libraries failed to load:', error);
+    });
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', function() {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+        }
     });
 });

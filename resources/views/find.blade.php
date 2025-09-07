@@ -334,6 +334,161 @@
     }
     
 }
+/* Scanner Styles */
+.btn-scan {
+    background: linear-gradient(45deg, #28a745, #20c997);
+    border: none;
+    padding: 15px 30px;
+    border-radius: 50px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(40,167,69,0.3);
+}
+
+.btn-scan:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(40,167,69,0.4);
+}
+
+.scanner-modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.8);
+    backdrop-filter: blur(5px);
+}
+
+.scanner-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    border-radius: 20px;
+    padding: 30px;
+    max-width: 90vw;
+    max-height: 90vh;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+
+.scanner-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.scanner-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #333;
+    margin: 0;
+}
+
+.close-scanner {
+    background: none;
+    border: none;
+    font-size: 28px;
+    color: #999;
+    cursor: pointer;
+    padding: 0;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.close-scanner:hover {
+    background: #f0f0f0;
+    color: #666;
+}
+
+.scanner-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+#scanner-video {
+    width: 100%;
+    max-width: 400px;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+.scanner-controls {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.btn-scanner-control {
+    background: linear-gradient(45deg, #6c757d, #495057);
+    border: none;
+    padding: 12px 20px;
+    border-radius: 25px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 14px;
+}
+
+.btn-scanner-control:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(108,117,125,0.4);
+}
+
+.btn-scanner-control.active {
+    background: linear-gradient(45deg, #28a745, #20c997);
+}
+
+.scanner-result {
+    background: #f8f9fa;
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    padding: 15px;
+    margin-top: 15px;
+    text-align: center;
+    min-height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.scanner-result.success {
+    background: #d4edda;
+    border-color: #c3e6cb;
+    color: #155724;
+}
+
+.scanner-result.error {
+    background: #f8d7da;
+    border-color: #f5c6cb;
+    color: #721c24;
+}
+
+.scanner-instructions {
+    text-align: center;
+    color: #666;
+    font-size: 14px;
+    margin-top: 10px;
+    line-height: 1.5;
+}
 </style>
 
 <div class="document-tracker">
@@ -344,6 +499,9 @@
             <button id="searchBtn" class="btn-search">
                 <i class="fas fa-search"></i> Search
             </button>
+            <button id="scanBtn" class="btn-scan">
+        <i class="fas fa-camera"></i> Scan
+    </button>
         </div>
         <div style="display: flex; justify-content: flex-end; margin-top: 15px;">
             <button id="printBtn" class="btn-print">
@@ -410,7 +568,42 @@
         <div id="printContent"></div>
     </div>
 </div>
+<!-- Scanner Modal -->
+<div id="scannerModal" class="scanner-modal">
+    <div class="scanner-content">
+        <div class="scanner-header">
+            <h3 class="scanner-title">
+                <i class="fas fa-qrcode"></i> Scan QR Code or Barcode
+            </h3>
+            <button class="close-scanner" id="closeScannerBtn">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="scanner-container">
+            <video id="scanner-video" autoplay muted playsinline></video>
+            <div class="scanner-controls">
+                <button id="toggleScannerBtn" class="btn-scanner-control">
+                    <i class="fas fa-play"></i> Start Scanner
+                </button>
+                <button id="switchCameraBtn" class="btn-scanner-control">
+                    <i class="fas fa-sync-alt"></i> Switch Camera
+                </button>
+            </div>
+            <div id="scannerResult" class="scanner-result">
+                Position the QR code or barcode within the camera view
+            </div>
+            <div class="scanner-instructions">
+                • Make sure the code is well lit and clearly visible<br>
+                • Hold the camera steady and at an appropriate distance<br>
+                • The scan will happen automatically when detected
+            </div>
+        </div>
+    </div>
+</div>
 
+<!-- Scanner Libraries -->
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
 <!-- Include Font Awesome -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 

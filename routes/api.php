@@ -6,12 +6,14 @@ use App\Http\Controllers\SectionController;
 use App\Http\Controllers\DoctypesController;
 use App\Http\Controllers\OfficeController; 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\DocmainController;
 
 use App\Http\Controllers\TwoFactorAuthenticationController;
 use App\Http\Controllers\DocumentTrackingController;
 use App\Http\Controllers\DocroutesController;
 
 use Illuminate\Support\Facades\Route;
+use PhpParser\Comment\Doc;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -25,6 +27,11 @@ Route::prefix('test')->group(function () {
     Route::get('/doctypes', [DoctypesController::class, 'index'])->name('test.doctypes');
     Route::get('/offices', [OfficeController::class, 'index'])->name('test.offices');
     Route::get('/auth/check', [AuthController::class, 'check']);
+
+    Route::get('/documents-stats', [DocmainController::class, 'stats']);
+    Route::get('/alldocs', [DocmainController::class, 'index'])->name('test.alldocs');
+    Route::get('/documents', [DocmainController::class, 'index'])->name('test.documents');
+
 });
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -37,6 +44,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('sections', SectionController::class);
     Route::apiResource('doctypes', DoctypesController::class);
     Route::apiResource('offices', OfficeController::class);
+    Route::apiResource('documents', DocmainController::class);
+
+    Route::post('documents/{id}/deactivate', [DocmainController::class, 'deactivate']);
+    Route::post('documents/{id}/activate', [DocmainController::class, 'activate']);
+    Route::post('documents/{id}/mark-done', [DocmainController::class, 'markDone']);
+    Route::post('documents/{id}/accept', [DocmainController::class, 'accept']);
+    Route::get('documents-stats', [DocmainController::class, 'stats']);
 
     Route::get('/two-factor', [TwoFactorAuthenticationController::class, 'index']); // status
     Route::post('/two-factor', [TwoFactorAuthenticationController::class, 'store']); // enable
