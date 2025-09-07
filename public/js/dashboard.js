@@ -14,8 +14,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Bind logout button
-    const logoutBtn = document.getElementById('logoutBtn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', logout);
-    }
+    // const logoutBtn = document.getElementById('logoutBtn');
+    // if (logoutBtn) {
+    //     logoutBtn.addEventListener('click', logout);
+    // }
 });
