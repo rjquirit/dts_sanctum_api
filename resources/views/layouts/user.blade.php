@@ -134,15 +134,15 @@
         });
 
         // Logout function
-        function logout() {
-            if (window.logout && typeof window.logout === 'function') {
-                window.logout();
-            } else {
-                if (confirm('Are you sure you want to logout?')) {
-                    window.location.href = '/logout';
-                }
-            }
-        }
+        // function logout() {
+        //     if (window.logout && typeof window.logout === 'function') {
+        //         window.logout();
+        //     } else {
+        //         if (confirm('Are you sure you want to logout?')) {
+        //             window.location.href = '/logout';
+        //         }
+        //     }
+        // }
 
         // Add logout event listener
         document.getElementById('logoutBtn').addEventListener('click', logout);

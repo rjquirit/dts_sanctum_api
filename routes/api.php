@@ -13,10 +13,13 @@ use App\Http\Controllers\DocumentTrackingController;
 use App\Http\Controllers\DocroutesController;
 
 use Illuminate\Support\Facades\Route;
-use PhpParser\Comment\Doc;
+use App\Http\Controllers\Auth\GoogleController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+
+Route::get('/login/google', [GoogleController::class, 'redirectToGoogle'])->name('login.google');
+Route::get('/auth/google/callback', [GoogleController::class, 'handleGoogleCallback']);
 
 Route::get('/docmain/track/{doc_id}', [DocumentTrackingController::class, 'track']);
 Route::get('/docroutes/{doc_id}', [DocroutesController::class, 'routesForDoc']);

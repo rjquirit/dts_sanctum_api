@@ -297,3 +297,183 @@ export async function challenge2FARecovery(recovery_code) {
   return await res.json(); // { message, remaining_codes }
 }
 
+// bindGoogleLogin.js
+// Expects helper functions available globally or imported:
+// - API_CONFIG { baseUrl, timeout, headers, oauthPopupTimeout? }
+// - fetchWithTimeout(url, opts) -> Promise<Response>
+// - isOnline(), showAlert(message, type='info', container?), setLoading(button, boolean), getCookie(name)
+
+export function bindGoogleLogin(buttonSelector) {
+  const btn = document.querySelector(buttonSelector);
+  if (!btn) return;
+
+  btn.addEventListener('click', async (ev) => {
+    ev.preventDefault();
+
+    if (!isOnline()) {
+      showAlert('You are offline. Please check your internet connection.', 'danger');
+      return;
+    }
+
+    setLoading(btn, true);
+
+    // Optional: request CSRF cookie first so future credentialed requests are prepared
+    try {
+      await fetchWithTimeout(`${API_CONFIG.baseUrl}/sanctum/csrf-cookie`, {
+        method: 'GET',
+        credentials: 'include',
+        timeout: API_CONFIG.timeout
+      });
+      // small delay to allow cookie to be set by browser
+      await new Promise(r => setTimeout(r, 120));
+    } catch (err) {
+      // continue anyway — this is helpful for cookie-based flows but not strictly required for top-level OAuth redirect
+      console.warn('Could not fetch CSRF cookie before OAuth:', err);
+    }
+
+    // Build OAuth URL (backend endpoint that triggers Socialite redirect)
+    const oauthUrl = `${API_CONFIG.baseUrl}/api/login/google`;
+
+    // Open popup window (avoid noopener — we need window.opener)
+    const width = 600;
+    const height = 700;
+    const left = Math.max(0, Math.floor((screen.width / 2) - (width / 2)));
+    const top = Math.max(0, Math.floor((screen.height / 2) - (height / 2)));
+    const features = `toolbar=0,location=0,status=0,menubar=0,scrollbars=1,resizable=1,width=${width},height=${height},top=${top},left=${left}`;
+
+    const popup = window.open(oauthUrl, 'google_oauth_popup', features);
+    if (!popup) {
+      setLoading(btn, false);
+      showAlert('Popup blocked. Please allow popups for this site and try again.', 'danger');
+      return;
+    }
+
+    let finished = false;
+    const maxWait = API_CONFIG.oauthPopupTimeout ?? 60000; // ms
+    const pollInterval = 500;
+    let elapsed = 0;
+
+    // Helper: cleanup
+    const cleanup = (reason) => {
+      finished = true;
+      window.removeEventListener('message', messageHandler);
+      try { clearInterval(poller); } catch (e) {}
+      setLoading(btn, false);
+    };
+
+    // Message event handler (if callback uses window.opener.postMessage)
+    const allowedOrigin = new URL(API_CONFIG.baseUrl).origin;
+    const messageHandler = (event) => {
+      // optional: validate origin
+      // Accept messages from backend origin or '*' if you intentionally want that
+      if (event.origin !== allowedOrigin && event.origin !== window.location.origin) {
+        // ignore unexpected origins
+        return;
+      }
+      const payload = event.data;
+      // Expected shape: { type: 'oauth'|'google_auth', data: {...} }
+      if (payload && (payload.type === 'oauth' || payload.type === 'google_auth')) {
+        cleanup('message');
+        handleOauthResponse(payload.data);
+      }
+    };
+
+    window.addEventListener('message', messageHandler);
+
+    // Poller — tries to access popup.document when it returns to same-origin (backend)
+    const poller = setInterval(async () => {
+      if (finished) return;
+
+      try {
+        if (!popup || popup.closed) {
+          cleanup('closed');
+          showAlert('Popup was closed before completing sign-in.', 'danger');
+          return;
+        }
+
+        // Attempt to read popup document; this will throw while popup is on google.com (cross-origin)
+        const doc = popup.document;
+        if (!doc) return;
+
+        // Read visible body text (if callback returns raw JSON it will be the body text)
+        let text = (doc.body && doc.body.innerText) ? doc.body.innerText.trim() : '';
+
+        // Some backends might return JSON inside a <pre> or <script> tag — try a couple of selectors
+        if (!text) {
+          const pre = doc.querySelector('pre');
+          if (pre) text = pre.innerText.trim();
+        }
+
+        if (text) {
+          // try parse JSON
+          try {
+            const data = JSON.parse(text);
+            cleanup('parsed_body');
+            // close popup (optional)
+            try { popup.close(); } catch (e) {}
+            handleOauthResponse(data);
+            return;
+          } catch (err) {
+            // Not raw JSON — maybe the server returned an html page that does postMessage instead.
+            // Try to read a global `__OAUTH_PAYLOAD__` if backend embedded it into page for the popup pattern.
+            const scriptEl = doc.querySelector('#oauth-payload');
+            if (scriptEl) {
+              try {
+                const data = JSON.parse(scriptEl.textContent);
+                cleanup('embedded_payload');
+                try { popup.close(); } catch (e) {}
+                handleOauthResponse(data);
+                return;
+              } catch (e) {
+                // ignore and continue polling
+              }
+            }
+          }
+        }
+      } catch (e) {
+        // cross-origin while on provider domain — ignore until it navigates back to same origin
+      }
+
+      elapsed += pollInterval;
+      if (elapsed >= maxWait) {
+        cleanup('timeout');
+        try { if (popup && !popup.closed) popup.close(); } catch (e) {}
+        showAlert('Timed out waiting for Google sign-in. Please try again.', 'danger');
+      }
+    }, pollInterval);
+
+    // Final handler for parsed response
+    async function handleOauthResponse(responseData) {
+      // Example expected shape:
+      // { isAuthenticated: true, access_token: 'xxx', token_type: 'Bearer', user: {id, name, email, ...} }
+      if (!responseData) {
+        showAlert('No response received from authentication server.', 'danger');
+        return;
+      }
+
+      if (responseData.isAuthenticated) {
+        try {
+          // Persist like your other login handler
+          localStorage.setItem('user', JSON.stringify(responseData.user));
+          localStorage.setItem('auth_token', responseData.access_token);
+
+          console.log('Google login successful:', {
+            user: responseData.user,
+            token: responseData.access_token
+          });
+
+          // NOTE: the backend should set the httpOnly cookie `auth_token` on the OAuth callback response.
+          // If cookie wasn't set due to SameSite or Secure config you may need to adjust backend cookie settings.
+          // (See notes below.)
+          window.location.href = '/dashboard';
+        } catch (err) {
+          console.error('Error handling oauth response:', err);
+          showAlert('An error occurred after Google sign-in. Please try logging in again.', 'danger');
+        }
+      } else {
+        console.error('Google login failed, server response:', responseData);
+        showAlert(responseData.message || 'Google sign-in failed. Please try again.', 'danger');
+      }
+    }
+  });
+}

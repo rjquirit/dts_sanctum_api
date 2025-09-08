@@ -1,4 +1,4 @@
-import { bindLogin, bindRegister } from './modules/auth.js';
+import { bindLogin, bindRegister, bindGoogleLogin } from './modules/auth.js';
 import { loadUsers, bindUserActions } from './modules/userCrud.js';
 import { logout } from './modules/logout.js';
 
@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (path.includes('/login')) {
     bindLogin('#loginForm');
+    bindGoogleLogin('#GoogleLoginButton');
   } else if (path.includes('/register')) {
     bindRegister('#registerForm');
   } else if (path === '/' || path.includes('/dashboard')) {

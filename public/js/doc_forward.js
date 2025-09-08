@@ -7,9 +7,9 @@ document.addEventListener('DOMContentLoaded', () => {
     loadFilteredDocs();
 
     // Get DOM elements
-    //const searchInput = document.getElementById('searchInput');
+    const searchInput = document.getElementById('searchInput');
     const searchBtn = document.getElementById('searchBtn');
-    //const docTypeFilter = document.getElementById('docTypeFilter');
+    const docTypeFilter = document.getElementById('docTypeFilter');
     const toggleSwitch = document.getElementById('toggleSwitch');
 
     // Search button click handler

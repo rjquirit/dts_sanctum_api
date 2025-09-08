@@ -140,4 +140,35 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Offices::class, 'section_id', 'section_id');
     }
+
+    /**
+     * Check if user has linked Google account
+     */
+    public function hasGoogleAccount()
+    {
+        return !empty($this->google_id);
+    }
+
+    /**
+     * Get user avatar with fallback
+     */
+    public function getAvatarAttribute($value)
+    {
+        if ($value) {
+            return $value;
+        }
+        
+        // Fallback to Gravatar or default avatar
+        $email = $this->email; // This will be decrypted automatically
+        $hash = md5(strtolower(trim($email)));
+        return "https://www.gravatar.com/avatar/{$hash}?d=identicon&s=100";
+    }
+
+    /**
+     * Check if user signed up via Google
+     */
+    public function isGoogleUser()
+    {
+        return $this->hasGoogleAccount() && empty($this->password);
+    }
 }

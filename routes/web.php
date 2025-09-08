@@ -2,12 +2,10 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\VerifySanctumToken;
-use Illuminate\Support\Facades\Auth;
 
 Route::view('/search', 'search')->name('search');
 Route::view('/login', 'auth.login')->name('login');
 Route::view('/register', 'auth.register')->name('register');
-
 Route::view('/', 'welcome')->name('home');
 
 Route::middleware(VerifySanctumToken::class)->group(function () {
