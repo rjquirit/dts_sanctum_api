@@ -33,7 +33,7 @@
                                 @csrf
                                 <div class="mb-3">
                                     <label for="email" class="form-label">{{ __('Email Address') }}</label>
-                                    <input type="email" class="form-control" id="email" autocomplete="email" autofocus placeholder="Enter your email">
+                                    <input type="email" class="form-control" id="email" name="email" autocomplete="email" autofocus placeholder="Enter your email">
                                     <div class="invalid-feedback" id="emailError"></div>
                                 </div>
                                 <div class="mb-3">

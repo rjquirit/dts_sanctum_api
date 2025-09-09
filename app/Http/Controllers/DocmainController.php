@@ -90,8 +90,8 @@ class DocmainController extends Controller
                 return [
                     'doc_id'             => $doc->doc_id ?? null,
                     'doc_tracking'       => $doc->doc_tracking ?? '',
-                    'doctype'            => $doc->doctype->doctype_description ?? ($doc->doc_type_id ?? ''),
                     'doctype_description'=> $doc->doctype->doctype_description ?? '',
+                    'docs_description'   => $doc->docs_description ?? '',
                     'origin_section'     => $doc->origin_section->section_name ?? ($doc->origin_section ?? ''),
                     'origin_fname'       => $doc->origin_fname ?? ($doc->origin_name ?? ''),
                     'route_fromsection'  => $route->route_fromsection ?? '',

@@ -977,6 +977,42 @@ body {
         padding: 4px 8px;
         font-size: 0.8rem;
     }
+    .table thead {
+        display: none; /* hide table headers */
+    }
+
+    .table tbody, 
+    .table tr, 
+    .table td {
+        display: block;
+        width: 100%;
+    }
+
+    .table tr {
+        margin-bottom: 15px;
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 10px;
+        background: white;
+    }
+
+    .table td {
+        display: block;
+        width: 100%;
+        text-align: left;
+        padding-left: 15px; /* reset from earlier */
+        position: relative;
+    }
+
+    .table td::before {
+        content: attr(data-label) "\A"; /* label + line break */
+        display: block;                /* put it on its own line */
+        font-weight: bold;
+        color: var(--secondary-color);
+        margin-bottom: 4px;            /* little spacing before value */
+        white-space: pre-wrap;         /* allow \A to work */
+        position: static;              /* no more absolute overlap */
+    }
 }
 
 /* VERY SMALL SCREENS: Override landscape preference */

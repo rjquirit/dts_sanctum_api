@@ -28,25 +28,27 @@ function renderDocs(docs, tableBodySelector) {
         tr.dataset.id = doc.doc_id || '';
 
         // Format date
-        const postedDate = new Date(doc.datetime_forwarded).toLocaleDateString();
+        const options = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' };
+        const postedDate = new Date(doc.datetime_forwarded).toLocaleString(undefined, options);
+
         
         tr.innerHTML = `
-            <td>${escapeHtml(doc.doc_tracking)}</td>
-            <td>
-            <b>${escapeHtml(doc.doctype)}</b> <br> 
-            ${escapeHtml(doc.doctype_description)}<br>
+            <td data-label='Tracking'><b>${escapeHtml(doc.doc_tracking)}</b></td>
+            <td data-label='Description'>
+            <b>${escapeHtml(doc.doctype_description)}</b> <br> 
+            ${escapeHtml(doc.docs_description)}<br>
             From: ${escapeHtml(doc.origin_section)} : ${escapeHtml(doc.origin_fname)}
             </td>
-            <td>
-            ${escapeHtml(doc.route_fromsection)}<br>
+            <td data-label='From'>
+            <b>${escapeHtml(doc.route_fromsection)} </b><br>
             ${escapeHtml(doc.route_from)}
             </td>
-            <td>
+            <td data-label='Purpose'>
             ${escapeHtml(doc.route_purpose)} <br>
             ${escapeHtml(doc.fwd_remarks)}
             </td>
-            <td>${escapeHtml(postedDate)}</td>
-            <td>
+            <td data-label='Date'>${escapeHtml(postedDate)}</td>
+            <td data-label='Action'>
                 <button class="btn btn-sm btn-info view" aria-label="View document">
                     <i class="fas fa-eye"></i>
                 </button>
