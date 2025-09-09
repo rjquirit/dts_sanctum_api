@@ -33,10 +33,22 @@
         <nav class="top-navbar">
             <div class="d-flex justify-content-between w-100 align-items-center">
                 <h4 class="mb-0">DTS 3.0</h4>
+                {{-- Search --}}
+                <a href="{{ route('find') }}" 
+                class="nav-link {{ request()->routeIs('find') ? 'active' : '' }} me-3 d-flex align-items-center">
+                    <i class="fas fa-search me-1"></i>
+                    <span>Search</span>
+                </a>
                 <div>
-                    <span id="userNameDisplay" class="me-3"><a href="{{ route('profile') }}" style="display: inline-block; padding: 6px 12px; background-color: #d35400; color: white; text-decoration: none; border-radius: 4px; font-weight: bold;">
-                         {{ explode(' ', trim(Auth::user()->name))[0] ?? 'User' }}
-                        </a></span>
+                    {{-- Avatar --}}
+                    <span id="userAvatarDisplay" class="me-3">
+                        <a href="{{ route('profile') }}" style="display: inline-block; padding: 6px 12px; background-color: #d35400; color: white; text-decoration: none; border-radius: 4px; font-weight: bold;">
+                            <img src="{{ Auth::user()->avatar ?? asset('images/default-avatar.png') }}" 
+                                alt="User Avatar" 
+                                style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">
+                        </a>
+                    </span>
+                    {{-- Logout --}}
                     <button id="logoutBtn" class="btn btn-outline-light btn-sm">
                         <i class="fas fa-sign-out-alt"></i>
                     </button>
@@ -47,17 +59,17 @@
         <!-- Sidebar Navigation (Desktop/Landscape) -->
         <aside class="sidebar" id="sidebar">
             <ul class="sidebar-nav">
-                <li><a href="{{ route('dashboard') }}" class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
-                    <i class="fas fa-inbox"></i>
-                    <span>Incoming</span>
-                </a></li>
                 <li><a href="{{ route('add') }}" class="nav-link {{ request()->routeIs('add') ? 'active' : '' }}">
                     <i class="fas fa-plus"></i>
                     <span>New Document</span>
                 </a></li>
-                <li><a href="{{ route('find') }}" class="nav-link {{ request()->routeIs('find') ? 'active' : '' }}">
-                    <i class="fas fa-search"></i>
-                    <span>Search</span>
+                <li><a href="{{ route('dashboard') }}" class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
+                    <i class="fas fa-inbox"></i>
+                    <span>Incoming</span>
+                </a></li>
+                <li><a href="{{ route('pending') }}" class="nav-link {{ request()->routeIs('pending') ? 'active' : '' }}">
+                    <i class="fas fa-file"></i>
+                    <span>Pending</span>
                 </a></li>
                 <li><a href="{{ route('forward') }}" class="nav-link {{ request()->routeIs('forward') ? 'active' : '' }}">
                     <i class="fas fa-share"></i>
@@ -65,7 +77,7 @@
                 </a></li>
                 <li><a href="{{ route('archive') }}" class="nav-link {{ request()->routeIs('archive') ? 'active' : '' }}">
                     <i class="fas fa-archive"></i>
-                    <span>Keep</span>
+                    <span>Deferred</span>
                 </a></li>
             </ul>
         </aside>
@@ -77,17 +89,17 @@
 
         <!-- Bottom Navigation (Mobile/Portrait) -->
         <nav class="bottom-nav" id="bottomNav">
-            <a href="{{ route('dashboard') }}" class="nav-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
-                <i class="fas fa-inbox"></i>
-                <span>Inbox</span>
-            </a>
             <a href="{{ route('add') }}" class="nav-item {{ request()->routeIs('add') ? 'active' : '' }}">
                 <i class="fas fa-plus"></i>
                 <span>New</span>
             </a>
-            <a href="{{ route('find') }}" class="nav-item {{ request()->routeIs('find') ? 'active' : '' }}">
-                <i class="fas fa-search"></i>
-                <span>Find</span>
+            <a href="{{ route('dashboard') }}" class="nav-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
+                <i class="fas fa-inbox"></i>
+                <span>Inbox</span>
+            </a>
+            <a href="{{ route('pending') }}" class="nav-item {{ request()->routeIs('pending') ? 'active' : '' }}">
+                <i class="fas fa-file"></i>
+                <span>Held</span>
             </a>
             <a href="{{ route('forward') }}" class="nav-item {{ request()->routeIs('forward') ? 'active' : '' }}">
                 <i class="fas fa-share"></i>

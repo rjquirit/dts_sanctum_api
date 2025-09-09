@@ -21,7 +21,7 @@ Route::middleware(VerifySanctumToken::class)->group(function () {
 
     Route::get('/profile', function () {return view('profile');})->name('profile');
 
-    Route::get('/search', function () {return view('search');})->name('search');
+    Route::get('/pending', function () {return view('pending');})->name('pending');
 });
 
 Route::post('/logout', function () {

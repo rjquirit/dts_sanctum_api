@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Laravel\Socialite\Facades\Socialite;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -33,15 +34,16 @@ class GoogleController extends Controller
                         ->first();
 
             if (!$user) {
-                $user = User::create([
-                    'name' => $googleUser->getName() ?? $googleUser->getNickname() ?? 'No Name',
-                    'email' => $encryptedEmail,
-                    'password' => Hash::make(Str::random(24)), // required if password NOT nullable
-                    'google_id' => $googleUser->getId(),
-                    'google_token' => $googleUser->token ?? null,
-                    'google_refresh_token' => $googleUser->refreshToken ?? null,
-                    'avatar' => $googleUser->getAvatar(),
-                ]);
+                // $user = User::create([
+                //     'name' => $googleUser->getName() ?? $googleUser->getNickname() ?? 'No Name',
+                //     'email' => $encryptedEmail,
+                //     'password' => Hash::make(Str::random(24)), // required if password NOT nullable
+                //     'google_id' => $googleUser->getId(),
+                //     'google_token' => $googleUser->token ?? null,
+                //     'google_refresh_token' => $googleUser->refreshToken ?? null,
+                //     'avatar' => $googleUser->getAvatar(),
+                // ]);
+                throw new \Exception("No existing user found for this Google account.");
             } else {
                 $user->update([
                     'google_id' => $googleUser->getId(),
@@ -75,6 +77,7 @@ class GoogleController extends Controller
                     'email'      => $googleUser->getEmail(),
                     'position'   => $user->position,
                     'section_id' => $user->section_id,
+                    'avatar'     => $user->avatar,  
                 ],
             ];
 
@@ -93,7 +96,7 @@ class GoogleController extends Controller
                 'isAuthenticated' => false,
                 'message' => 'Google login failed',
                 'error' => $e->getMessage(),
-            ], 401);
+            ], 422);
         }
     }
 }
