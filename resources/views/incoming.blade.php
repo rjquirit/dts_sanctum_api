@@ -80,30 +80,26 @@ th.sortable:hover i {
                     <thead class="table-dark">
                         <tr>
                             <th class="sortable" data-sort-by="doc_tracking">
-                                Tracking #
-                                <i class="fas fa-sort ms-1"></i>
-                            </th>
-                            <th class="sortable" data-sort-by="doc_type_id">
-                                Type
+                                TRACKING #
                                 <i class="fas fa-sort ms-1"></i>
                             </th>
                             <th class="sortable" data-sort-by="docs_description">
-                                Description
+                                TYPE & DESCRIPTION
                                 <i class="fas fa-sort ms-1"></i>
                             </th>
-                            <th class="sortable" data-sort-by="origin_office_id">
-                                Origin
+                            <th class="sortable" data-sort-by="route_fromsection">
+                                FROM
                                 <i class="fas fa-sort ms-1"></i>
                             </th>
-                            <th class="sortable" data-sort-by="actions_needed">
-                                Status
+                            <th class="sortable" data-sort-by="route_purpose">
+                                ACTIONS NEEDED
                                 <i class="fas fa-sort ms-1"></i>
                             </th>
-                            <th class="sortable" data-sort-by="datetime_posted">
-                                Date Posted
+                            <th class="sortable" data-sort-by="datetime_forwarded">
+                                DATE POSTED
                                 <i class="fas fa-sort ms-1"></i>
                             </th>
-                            <th>Actions</th>
+                            <th>ACTION</th>
                         </tr>
                     </thead>
                     <tbody id="documentsTableBody">
@@ -153,7 +149,7 @@ th.sortable:hover i {
 </div>
 
 @push('scripts')
-<script type="module" src="{{ asset('js/doc_forward.js') }}"></script>
+<script type="module" src="{{ asset('js/doc_incoming.js') }}"></script>
 @endpush
 
 @endsection

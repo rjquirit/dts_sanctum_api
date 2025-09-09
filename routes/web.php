@@ -9,7 +9,7 @@ Route::view('/register', 'auth.register')->name('register');
 Route::view('/', 'welcome')->name('home');
 
 Route::middleware(VerifySanctumToken::class)->group(function () {
-    Route::get('/dashboard', function () {return view('dashboard');})->name('dashboard');
+    Route::get('/incoming', function () {return view('incoming');})->name('incoming');
     
     Route::get('/add', function () {return view('add');})->name('add');
     

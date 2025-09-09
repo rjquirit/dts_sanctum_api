@@ -63,7 +63,7 @@
                     <i class="fas fa-plus"></i>
                     <span>New Document</span>
                 </a></li>
-                <li><a href="{{ route('dashboard') }}" class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
+                <li><a href="{{ route('incoming') }}" class="nav-link {{ request()->routeIs('incoming') ? 'active' : '' }}">
                     <i class="fas fa-inbox"></i>
                     <span>Incoming</span>
                 </a></li>
@@ -93,7 +93,7 @@
                 <i class="fas fa-plus"></i>
                 <span>New</span>
             </a>
-            <a href="{{ route('dashboard') }}" class="nav-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
+            <a href="{{ route('incoming') }}" class="nav-item {{ request()->routeIs('incoming') ? 'active' : '' }}">
                 <i class="fas fa-inbox"></i>
                 <span>Inbox</span>
             </a>

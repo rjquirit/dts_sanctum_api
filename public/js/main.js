@@ -1,5 +1,5 @@
 import { bindLogin, bindRegister, bindGoogleLogin } from './modules/auth.js';
-import { loadUsers, bindUserActions } from './modules/userCrud.js';
+//import { loadUsers, bindUserActions } from './modules/userCrud.js';
 import { logout } from './modules/logout.js';
 
 
@@ -11,10 +11,11 @@ document.addEventListener('DOMContentLoaded', () => {
     bindGoogleLogin('#GoogleLoginButton');
   } else if (path.includes('/register')) {
     bindRegister('#registerForm');
-  } else if (path === '/' || path.includes('/dashboard')) {
-    loadUsers('#usersTable tbody');
-    bindUserActions('#userForm', '#usersTable tbody');
-  }
+  } 
+//   else if (path === '/' || path.includes('/incoming')) {
+//     loadUsers('#usersTable tbody');
+//     bindUserActions('#userForm', '#usersTable tbody');
+//   }
 
   // Bind logout button
     const logoutBtn = document.getElementById('logoutBtn');
@@ -77,8 +78,8 @@ export class AppNavigation {
   }
 
   setInitialTab() {
-      // Set dashboard as the initial active tab
-      this.switchTab('dashboard');
+      // Set incoming as the initial active tab
+      this.switchTab('incoming');
   }
 
   setupEventListeners() {
@@ -149,13 +150,14 @@ export class AppNavigation {
 
   updatePageTitle(tabId) {
       const titles = {
-          'dashboard': 'Dashboard',
-          'users': 'User Management', 
-          'profile': 'Profile',
-          'settings': 'Settings'
+          'incoming': 'Incoming',
+          'outgoing': 'Outgoing',
+          'forward': 'Forward',
+          'pending': 'Pending',
+          'archive': 'Archive'
       };
 
-      const title = titles[tabId] || 'Dashboard';
+      const title = titles[tabId] || 'Incoming';
       document.title = `DepEd ROX - ${title}`;
   }
 

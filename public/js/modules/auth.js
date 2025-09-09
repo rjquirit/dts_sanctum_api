@@ -156,7 +156,7 @@ export function bindLogin(formSelector) {
           token: responseData.access_token
         });
         
-        window.location.href = '/dashboard';
+        window.location.href = '/incoming';
       } else {
         console.error('Login failed:', {
           status: response.status,
@@ -465,7 +465,7 @@ export function bindGoogleLogin(buttonSelector) {
           // NOTE: the backend should set the httpOnly cookie `auth_token` on the OAuth callback response.
           // If cookie wasn't set due to SameSite or Secure config you may need to adjust backend cookie settings.
           // (See notes below.)
-          window.location.href = '/dashboard';
+          window.location.href = '/incoming';
         } catch (err) {
           console.error('Error handling oauth response:', err);
           showAlert('An error occurred after Google sign-in. Please try logging in again.', 'danger');

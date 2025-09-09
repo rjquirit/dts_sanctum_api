@@ -4,15 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\Docmain;
-Use App\Models\Docroutes;
+use App\Models\Docroutes;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 
-class DocmainController extends Controller
+class DocForwardController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
@@ -26,85 +25,79 @@ class DocmainController extends Controller
                 ], 401);
             }
 
-            $sortBy = $request->get('sort_by', 'datetime_route_accepted');
-            $sortOrder = strtolower($request->get('sort_order', 'desc')) === 'asc' ? 'asc' : 'desc';
+            $query = Docmain::with(['doctype', 'origin_section', 'origin_office', 'routes']);
 
-            $sortMap = [
-                // route columns (dts_docroutes)
-                'action_id' => 'dts_docroutes.action_id',
-                'datetime_forwarded' => 'dts_docroutes.datetime_forwarded',
-                'datetime_route_accepted' => 'dts_docroutes.datetime_route_accepted',
-                'route_purpose' => 'dts_docroutes.route_purpose',
-                // doc (dts_docs) columns
-                'datetime_posted' => 'dts_docs.datetime_posted',
-                'doc_tracking' => 'dts_docs.doc_tracking',
-                'docs_description' => 'dts_docs.docs_description',
-                'origin_fname' => 'dts_docs.origin_fname',
-            ];
-
-            // if unknown sort request, default to a safe column
-            $sortColumn = $sortMap[$sortBy] ?? 'dts_docroutes.datetime_route_accepted';
-
-            // --- base query: select routes and join docs so we can sort by doc fields safely ---
-            $query = Docroutes::select('dts_docroutes.*')
-                ->leftJoin('dts_docs', 'dts_docs.doc_id', '=', 'dts_docroutes.document_id')
-                ->with(['document.doctype', 'document.origin_section', 'document.origin_office']);
-
-            // Keep the route filters (qualified column names)
-            $query->where('dts_docroutes.datetime_route_accepted', 0)
-                ->where('dts_docroutes.active', 1);
-
-            // Toggle: personal vs office
+            // Toggle-based filtering: false = office, true = personal
             if ($request->has('toggle')) {
-                // use boolean() to allow 'true'/'false' strings
-                if ($request->boolean('toggle')) {
-                    $query->where('dts_docroutes.route_touser_id', $user->id);
+                if ($request->toggle === 'true' || $request->toggle === true) {
+                    // Personal documents: filter by acceptedby_userid = current user's id
+                    $query->where('acceptedby_userid', $user->id);
                 } else {
-                    $query->where('dts_docroutes.route_tosection_id', $user->section_id);
+                    // Office documents: filter by receiving_section = current user's section_id
+                    $query->where('receiving_section', $user->section_id);
                 }
             } else {
-                $query->where('dts_docroutes.route_tosection_id', $user->section_id);
+                // Default behavior: show office documents
+                $query->where('receiving_section', $user->section_id);
             }
-
-            // Search: since we've joined dts_docs, search on qualified columns
-            if ($request->filled('search')) {
-                $searchTerm = '%' . $request->search . '%';
-                $query->where(function($q) use ($searchTerm) {
-                    $q->where('dts_docs.doc_tracking', 'like', $searchTerm)
-                    ->orWhere('dts_docs.docs_description', 'like', $searchTerm)
-                    ->orWhere('dts_docs.origin_fname', 'like', $searchTerm);
+            Log::info("Forwarded Docs Query", [
+                'sql' => $query->toSql(),
+                'bindings' => $query->getBindings(),
+            ]);
+            
+            // Search functionality
+            if ($request->has('search') && !empty($request->search)) {
+                $searchTerm = $request->search;
+                $query->where(function ($q) use ($searchTerm) {
+                    $q->where('doc_tracking', 'LIKE', "%{$searchTerm}%")
+                      ->orWhere('docs_description', 'LIKE', "%{$searchTerm}%")
+                      ->orWhere('origin_fname', 'LIKE', "%{$searchTerm}%")
+                      ->orWhere('origin_school', 'LIKE', "%{$searchTerm}%")
+                      ->orWhere('actions_needed', 'LIKE', "%{$searchTerm}%")
+                      ->orWhere('acct_payee', 'LIKE', "%{$searchTerm}%")
+                      ->orWhere('acct_particulars', 'LIKE', "%{$searchTerm}%")
+                      ->orWhere('final_actions_made', 'LIKE', "%{$searchTerm}%")
+                      ->orWhere('deactivate_reason', 'LIKE', "%{$searchTerm}%");
                 });
             }
 
-            // Apply ordering using qualified column
-            $query->orderByRaw("$sortColumn $sortOrder");
+            // Filter by active status
+            if ($request->has('active')) {
+                $query->where('active', $request->active);
+            }
 
-            // Pagination (select dts_docroutes.* earlier avoids ambiguous column errors)
-            $perPage = (int) $request->get('per_page', 15);
+            // Filter by document type
+            if ($request->has('doc_type_id')) {
+                $query->where('doc_type_id', $request->doc_type_id);
+            }
+
+            // Filter by origin section
+            if ($request->has('origin_section')) {
+                $query->where('origin_section', $request->origin_section);
+            }
+
+            // Filter by done status
+            if ($request->has('done')) {
+                $query->where('done', $request->done);
+            }
+
+            // Date range filter for datetime_posted
+            if ($request->has('date_from') && $request->has('date_to')) {
+                $query->whereBetween('datetime_posted', [
+                    $request->date_from . ' 00:00:00',
+                    $request->date_to . ' 23:59:59'
+                ]);
+            }
+
+            // Sorting
+            $sortBy = $request->get('sort_by', 'doc_id');
+            $sortOrder = $request->get('sort_order', 'desc');
+            $query->orderBy($sortBy, $sortOrder);
+
+            // Pagination
+            $perPage = $request->get('per_page', 15);
             $documents = $query->paginate($perPage);
 
-            // --- transform the paginator items into flat objects your frontend expects ---
-            $documents->getCollection()->transform(function($route) {
-                $doc = $route->document ?? null;
-
-                return [
-                    'doc_id'             => $doc->doc_id ?? null,
-                    'doc_tracking'       => $doc->doc_tracking ?? '',
-                    'doctype'            => $doc->doctype->doctype_description ?? ($doc->doc_type_id ?? ''),
-                    'doctype_description'=> $doc->doctype->doctype_description ?? '',
-                    'origin_section'     => $doc->origin_section->section_name ?? ($doc->origin_section ?? ''),
-                    'origin_fname'       => $doc->origin_fname ?? ($doc->origin_name ?? ''),
-                    'route_fromsection'  => $route->route_fromsection ?? '',
-                    'route_from'         => $route->route_from ?? '',
-                    'route_purpose'      => $route->route_purpose ?? '',
-                    'fwd_remarks'        => $route->fwd_remarks ?? '',
-                    'datetime_forwarded' => optional($route->datetime_forwarded)->format('Y-m-d H:i:s') ?? ($doc->datetime_posted ?? null),
-                    // include route action id for reference
-                    'action_id'          => $route->action_id ?? null,
-                ];
-            });
-
-            // return the paginator with transformed collection (frontend expects pagination)
             return response()->json([
                 'success' => true,
                 'message' => 'Documents retrieved successfully',

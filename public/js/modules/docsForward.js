@@ -28,23 +28,14 @@ function renderDocs(docs, tableBodySelector) {
         tr.dataset.id = doc.doc_id || '';
 
         // Format date
-        const postedDate = new Date(doc.datetime_forwarded).toLocaleDateString();
+        const postedDate = new Date(doc.datetime_posted).toLocaleDateString();
         
         tr.innerHTML = `
             <td>${escapeHtml(doc.doc_tracking)}</td>
-            <td>
-            <b>${escapeHtml(doc.doctype)}</b> <br> 
-            ${escapeHtml(doc.doctype_description)}<br>
-            From: ${escapeHtml(doc.origin_section)} : ${escapeHtml(doc.origin_fname)}
-            </td>
-            <td>
-            ${escapeHtml(doc.route_fromsection)}<br>
-            ${escapeHtml(doc.route_from)}
-            </td>
-            <td>
-            ${escapeHtml(doc.route_purpose)} <br>
-            ${escapeHtml(doc.fwd_remarks)}
-            </td>
+            <td>${escapeHtml(doc.doctype?.doctype_description || '')}</td>
+            <td>${escapeHtml(doc.docs_description)}</td>
+            <td>${escapeHtml(doc.origin_office?.school_name || '')}</td>
+            <td>${escapeHtml(doc.actions_needed)}</td>
             <td>${escapeHtml(postedDate)}</td>
             <td>
                 <button class="btn btn-sm btn-info view" aria-label="View document">

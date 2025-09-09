@@ -62,9 +62,9 @@
   ],
   "shortcuts": [
     {
-      "name": "Dashboard",
-      "short_name": "Dashboard",
-      "description": "Go to dashboard",
+      "name": "DTS",
+      "short_name": "DTS",
+      "description": "Go to DTS",
       "url": "/",
       "icons": [
         {
