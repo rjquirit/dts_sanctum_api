@@ -30,10 +30,12 @@ class DocumentTrackingController extends Controller
                 return response()->json([
                     'message' => 'Document not found'
                 ], 404);
-            }
-            Log::error('Error tracking document:', [
+                
+                Log::error('Error tracking document:', [
                 'doc_id' =>$document->doc_id,
-            ]);
+                ]);
+            }
+            
             // Get the document route history
             $routes = Docroutes::where('document_id', $document->doc_id)
                 ->with(['fromUser', 'fromSection', 'toUser', 'toSection'])
