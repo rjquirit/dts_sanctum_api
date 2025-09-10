@@ -42,6 +42,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
     Route::put('/profile/password', [ProfileController::class, 'updatePassword']);
+
+    Route::get('/documents/incoming', [DocmainController::class, 'index'])->defaults('type', 'incoming');
+    Route::get('/documents/pending', [DocmainController::class, 'index'])->defaults('type', 'pending');
+    Route::get('/documents/forward', [DocmainController::class, 'index'])->defaults('type', 'forward');
+    Route::get('/documents/deferred', [DocmainController::class, 'index'])->defaults('type', 'deferred');
     
     Route::apiResource('users', UserController::class);
     Route::apiResource('sections', SectionController::class);

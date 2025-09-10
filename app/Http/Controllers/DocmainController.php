@@ -26,6 +26,15 @@ class DocmainController extends Controller
                 ], 401);
             }
 
+            $typeInput = strtolower((string)($request->get('type', 'incoming')));
+            $typeMap = [
+                'incoming' => 1, '1' => 1,
+                'pending'  => 2, '2' => 2,
+                'forward'  => 3, '3' => 3,
+                'deferred' => 4, '4' => 4,
+            ];
+            $case = $typeMap[$typeInput] ?? 1; // default to incoming   
+
             $sortBy = $request->get('sort_by', 'datetime_route_accepted');
             $sortOrder = strtolower($request->get('sort_order', 'desc')) === 'asc' ? 'asc' : 'desc';
 
@@ -49,10 +58,30 @@ class DocmainController extends Controller
             $query = Docroutes::select('dts_docroutes.*')
                 ->leftJoin('dts_docs', 'dts_docs.doc_id', '=', 'dts_docroutes.document_id')
                 ->with(['document.doctype', 'document.origin_section', 'document.origin_office']);
-
-            // Keep the route filters (qualified column names)
-            $query->where('dts_docroutes.datetime_route_accepted', 0)
-                ->where('dts_docroutes.active', 1);
+            
+            switch ($case) {
+                case 1: // incoming
+                    // Keep the route filters (qualified column names)
+                    $query->where('dts_docroutes.datetime_route_accepted', 0)
+                        ->where('dts_docroutes.active', 1);
+                    break;
+                case 2: // pending
+                    $query->where('dts_docroutes.datetime_route_accepted', '<>', 0)
+                        ->where('dts_docroutes.active', 1)
+                        ->where('dts_docroutes.route_accomplished', '<>', 4);
+                    break;
+                case 3: // forward
+                    
+                    break;
+                case 4: // deferred
+                    $query->where('dts_docroutes.datetime_route_accepted', '<>', 0)
+                        ->where('dts_docroutes.active', 1)
+                        ->where('dts_docroutes.route_accomplished', '=', 4);
+                    break;
+                default:
+                    $query->where('dts_docroutes.datetime_route_accepted', 0)
+                        ->where('dts_docroutes.active', 1);
+            }
 
             // Toggle: personal vs office
             if ($request->has('toggle')) {
