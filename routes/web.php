@@ -9,19 +9,16 @@ Route::view('/register', 'auth.register')->name('register');
 Route::view('/', 'welcome')->name('home');
 
 Route::middleware(VerifySanctumToken::class)->group(function () {
-    Route::get('/incoming', function () {return view('incoming');})->name('incoming');
-    
-    Route::get('/add', function () {return view('add');})->name('add');
-    
-    Route::get('/find', function () {return view('find');})->name('find');
-    
-    Route::get('/forward', function () {return view('forward');})->name('forward');
-    
-    Route::get('/archive', function () {return view('archive');})->name('archive');
 
+    Route::get('/add', function () {return view('add');})->name('add');
+    Route::get('/find', function () {return view('find');})->name('find');
     Route::get('/profile', function () {return view('profile');})->name('profile');
 
-    Route::get('/pending', function () {return view('pending');})->name('pending');
+    //document views
+    Route::get('/incoming', fn() => view('incoming', ['type' => 'incoming']))->name('incoming');
+    Route::get('/pending', fn() => view('pending', ['type' => 'pending']))->name('pending');  
+    Route::get('/forward', fn() => view('forward', ['type' => 'forward']))->name('forward');
+    Route::get('/archive', fn() => view('archive', ['type' => 'deferred']))->name('archive');
 });
 
 Route::post('/logout', function () {

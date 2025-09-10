@@ -791,7 +791,9 @@ body {
 /* Table Styles */
 .table-responsive {
     border-radius: 12px;
-    overflow: hidden;
+    /* overflow: hidden; */
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
     box-shadow: 0 8px 25px rgba(230, 126, 34, 0.15);
 }
 

@@ -25,15 +25,22 @@ class DocmainController extends Controller
                     'message' => 'Please log in to access documents'
                 ], 401);
             }
-
-            $typeInput = strtolower((string)($request->get('type', 'incoming')));
+            // Get the current route name
+            $routeName = $request->route()->getName();
+            $typeInput = strtolower((string)($request->get('type')));
             $typeMap = [
-                'incoming' => 1, '1' => 1,
-                'pending'  => 2, '2' => 2,
-                'forward'  => 3, '3' => 3,
-                'deferred' => 4, '4' => 4,
+                'incoming' => 1, 
+                'pending'  => 2, 
+                'forward'  => 3, 
+                'deferred' => 4,
             ];
-            $case = $typeMap[$typeInput] ?? 1; // default to incoming   
+            $case = $typeMap[$typeInput] ?? 1; // default to incoming
+            Log::info("DocmainController@index called", [
+                'user_id' => $user->id,
+                'type' => $typeInput,
+                'case' => $case,
+                'route_name' => $routeName,
+            ]);   
 
             $sortBy = $request->get('sort_by', 'datetime_route_accepted');
             $sortOrder = strtolower($request->get('sort_order', 'desc')) === 'asc' ? 'asc' : 'desc';

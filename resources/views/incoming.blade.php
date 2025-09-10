@@ -36,7 +36,7 @@ th.sortable:hover i {
 <div class="container-fluid">
     <div class="row">
         <div class="col-12">
-            <h5>Document Forwarding</h5>
+            <h5>Incoming Documents</h5>
             <hr>
             
             <!-- Toggle Switch for Document Type -->
@@ -44,7 +44,7 @@ th.sortable:hover i {
                 <div class="col-md-3">
                     <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" id="toggleSwitch">
-                        <label class="form-check-label" for="toggleSwitch">Show Personal Documents</label>
+                        <label class="form-check-label" for="toggleSwitch">Show Personal Incoming Documents</label>
                     </div>
 
                 </div>

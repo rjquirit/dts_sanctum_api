@@ -1,9 +1,42 @@
 @extends('layouts.user')
 @section('content')
+<style>
+/* Sortable table headers */
+th.sortable {
+    cursor: pointer;
+    position: relative;
+    user-select: none;
+    white-space: nowrap;
+}
+
+th.sortable:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+th.sortable i {
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+th.sortable:hover i {
+    opacity: 1;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    th.sortable {
+        font-size: 0.9rem;
+    }
+    
+    th.sortable i {
+        font-size: 0.8em;
+    }
+}
+</style>
 <div class="container-fluid">
     <div class="row">
         <div class="col-12">
-            <h5>Document Forwarding</h5>
+            <h5>Pending Documents</h5>
             <hr>
             
             <!-- Toggle Switch for Document Type -->
@@ -11,7 +44,7 @@
                 <div class="col-md-3">
                     <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" id="toggleSwitch">
-                        <label class="form-check-label" for="toggleSwitch">Show Personal Documents</label>
+                        <label class="form-check-label" for="toggleSwitch">Show Personal Pending Documents</label>
                     </div>
 
                 </div>
@@ -46,13 +79,27 @@
                 <table class="table table-striped table-hover">
                     <thead class="table-dark">
                         <tr>
-                            <th>Tracking #</th>
-                            <th>Type</th>
-                            <th>Description</th>
-                            <th>Origin</th>
-                            <th>Status</th>
-                            <th>Date Posted</th>
-                            <th>Actions</th>
+                            <th class="sortable" data-sort-by="doc_tracking">
+                                TRACKING #
+                                <i class="fas fa-sort ms-1"></i>
+                            </th>
+                            <th class="sortable" data-sort-by="docs_description">
+                                TYPE & DESCRIPTION
+                                <i class="fas fa-sort ms-1"></i>
+                            </th>
+                            <th class="sortable" data-sort-by="route_fromsection">
+                                FROM
+                                <i class="fas fa-sort ms-1"></i>
+                            </th>
+                            <th class="sortable" data-sort-by="route_purpose">
+                                ACTIONS NEEDED
+                                <i class="fas fa-sort ms-1"></i>
+                            </th>
+                            <th class="sortable" data-sort-by="datetime_forwarded">
+                                DATE POSTED
+                                <i class="fas fa-sort ms-1"></i>
+                            </th>
+                            <th>ACTION</th>
                         </tr>
                     </thead>
                     <tbody id="documentsTableBody">
@@ -102,7 +149,7 @@
 </div>
 
 @push('scripts')
-<script type="module" src="{{ asset('js/doc_forward.js') }}"></script>
+<script type="module" src="{{ asset('js/doc_pending.js') }}"></script>
 @endpush
 
 @endsection
