@@ -91,7 +91,7 @@ function escapeHtml(unsafe) {
 /**
  * Load Docs from API or cache if offline
  */
-export async function loadDocs(tableBodySelector, url = '/api/documents/pending?type=pending') {
+export async function loadDocs(tableBodySelector, url = '/api/documents/pending?${params.toString()}') {
     const tableBody = document.querySelector(tableBodySelector);
     
     try {

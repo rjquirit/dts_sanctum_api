@@ -36,7 +36,7 @@ th.sortable:hover i {
 <div class="container-fluid">
     <div class="row">
         <div class="col-12">
-            <h5>Forward Documents</h5>
+            <h5>Forwarded Documents</h5>
             <hr>
             
             <!-- Toggle Switch for Document Type -->
@@ -149,7 +149,7 @@ th.sortable:hover i {
 </div>
 
 @push('scripts')
-<script type="module" src="{{ asset('js/doc_incoming.js') }}"></script>
+<script type="module" src="{{ asset('js/doc_forward.js') }}"></script>
 @endpush
 
 @endsection

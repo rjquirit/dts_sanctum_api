@@ -25,14 +25,26 @@ class DocmainController extends Controller
                     'message' => 'Please log in to access documents'
                 ], 401);
             }
+            Log::info("DocmainController@index DEBUG", [
+                'user_id' => $user->id,
+                'request_url' => $request->fullUrl(),
+                'request_path' => $request->path(),
+                'route_name' => $request->route()->getName(),
+                'route_parameters' => $request->route()->parameters(),
+                'query_parameters' => $request->query(),
+                'all_parameters' => $request->all(),
+            ]);
             // Get the current route name
             $routeName = $request->route()->getName();
-            $typeInput = strtolower((string)($request->get('type')));
+            $typeInput = strtolower(
+                $request->route('type') ?? $request->get('type', 'incoming')
+            );
+
             $typeMap = [
-                'incoming' => 1, 
-                'pending'  => 2, 
-                'forward'  => 3, 
-                'deferred' => 4,
+                'incoming' => 1, '1' => 1,
+                'pending'  => 2, '2' => 2,
+                'forward'  => 3, '3' => 3,
+                'deferred' => 4, '4' => 4,
             ];
             $case = $typeMap[$typeInput] ?? 1; // default to incoming
             Log::info("DocmainController@index called", [
@@ -78,7 +90,9 @@ class DocmainController extends Controller
                         ->where('dts_docroutes.route_accomplished', '<>', 4);
                     break;
                 case 3: // forward
-                    
+                    $query->where('dts_docroutes.datetime_route_accepted', '<>', 0)
+                        ->where('dts_docroutes.active', 1)
+                        ->where('dts_docroutes.route_accomplished', '<>', 4);
                     break;
                 case 4: // deferred
                     $query->where('dts_docroutes.datetime_route_accepted', '<>', 0)
@@ -94,12 +108,24 @@ class DocmainController extends Controller
             if ($request->has('toggle')) {
                 // use boolean() to allow 'true'/'false' strings
                 if ($request->boolean('toggle')) {
-                    $query->where('dts_docroutes.route_touser_id', $user->id);
+                    if($case==3){
+                        $query->where('dts_docroutes.route_fromuser_id', $user->id);
+                    }else{
+                        $query->where('dts_docroutes.route_touser_id', $user->id);
+                    }
                 } else {
-                    $query->where('dts_docroutes.route_tosection_id', $user->section_id);
+                    if($case==3){
+                        $query->where('dts_docroutes.route_fromsection_id', $user->section_id);
+                    }else{
+                        $query->where('dts_docroutes.route_tosection_id', $user->section_id);
+                    }
                 }
             } else {
-                $query->where('dts_docroutes.route_tosection_id', $user->section_id);
+                if($case==3){
+                    $query->where('dts_docroutes.route_fromsection_id', $user->section_id);
+                }else{
+                    $query->where('dts_docroutes.route_tosection_id', $user->section_id);    
+                }
             }
 
             // Search: since we've joined dts_docs, search on qualified columns

@@ -43,10 +43,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', [AuthController::class, 'user']);
     Route::put('/profile/password', [ProfileController::class, 'updatePassword']);
 
-    Route::get('/documents/incoming', [DocmainController::class, 'index'])->defaults('type', 'incoming')->name('documents.incoming');
-    Route::get('/documents/pending', [DocmainController::class, 'index'])->defaults('type', 'pending')->name('documents.pending');
-    Route::get('/documents/forward', [DocmainController::class, 'index'])->defaults('type', 'forward')->name('documents.forward');
-    Route::get('/documents/deferred', [DocmainController::class, 'index'])->defaults('type', 'deferred')->name('documents.deferred');
+    Route::get('/documents/{type?}', [DocmainController::class, 'index'])
+        ->where('type', 'incoming|pending|forward|deferred');
+    // Route::get('/documents/incoming', [DocmainController::class, 'index'])->defaults('type', 'incoming')->name('documents.incoming');
+    // Route::get('/documents/pending', [DocmainController::class, 'index'])->defaults('type', 'pending')->name('documents.pending');
+    // Route::get('/documents/forward', [DocmainController::class, 'index'])->defaults('type', 'forward')->name('documents.forward');
+    // Route::get('/documents/deferred', [DocmainController::class, 'index'])->defaults('type', 'deferred')->name('documents.deferred');
     
     Route::apiResource('users', UserController::class);
     Route::apiResource('sections', SectionController::class);

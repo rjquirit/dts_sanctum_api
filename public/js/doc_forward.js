@@ -1,4 +1,4 @@
-import { loadDocs } from './modules/docsCrud.js';
+import { loadDocs } from './modules/docsForward.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM loaded, initializing...');
@@ -100,16 +100,19 @@ function loadFilteredDocs() {
     const url = new URL(window.location.href);
     const sortBy = url.searchParams.get('sort_by') || 'datetime_posted';
     const sortOrder = url.searchParams.get('sort_order') || 'desc';
+    const page = url.searchParams.get('page') || 1;
     
-    // Build query parameters
+    // Build query parameters - ADD TYPE HERE
     const params = new URLSearchParams();
+    params.append('type', 'forward'); // <-- ADD THIS LINE
     if (searchTerm) params.append('search', searchTerm);
     if (docTypeId) params.append('doc_type_id', docTypeId);
     params.append('toggle', showPersonal);
     params.append('sort_by', sortBy);
     params.append('sort_order', sortOrder);
+    params.append('page', page);
     
-    // Call loadDocs with the constructed query string
+    // Call with type as query parameter
     loadDocs('#documentsTableBody', `/api/documents?${params.toString()}`);
 }
 
