@@ -35,7 +35,7 @@ class Docmain extends Model
         'doc_type_id',
         'tempdocs_id',
         'docs_description',
-        'origin_name',
+        'origin_fname',
         'origin_userid',
         'origin_school_id',
         'origin_school',
@@ -64,7 +64,7 @@ class Docmain extends Model
     // Default values
     protected $attributes = [
     'tempdocs_id' => 0,
-    'origin_name' => '',
+    'origin_fname' => '',
     'origin_school_id' => 1,
     'datetime_accepted' => null,
     'acceptedby_userid' => 0,

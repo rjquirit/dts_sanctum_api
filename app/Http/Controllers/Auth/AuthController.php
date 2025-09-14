@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\Sections;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -97,6 +98,7 @@ class AuthController extends Controller
                 'email'      => $request->email,
                 'position'   => $user->position,
                 'section_id' => $user->section_id,
+                'section_name' => Sections::select('section_description')->where('section_id', $user->section_id)->first()->section_description,
                 'avatar'     => $user->avatar,   
             ],
         ];
@@ -105,6 +107,7 @@ class AuthController extends Controller
             'user_id' => $user->id,
             'response_has_token' => isset($responseData['access_token']),
             'response_token_length' => strlen($responseData['access_token']),
+            'section_name' => Sections::select('section_description')->where('section_id', $user->section_id)->first()->section_description,
             'cookie_will_be_attached' => true
         ]);
 
@@ -142,6 +145,7 @@ class AuthController extends Controller
                 'email' => $request->user()->email,
                 'position' => $request->user()->position,
                 'section_id' => $request->user()->section_id,
+                'section_name' => Sections::where('section_id', $user->section_id)->first()->name,
             ]
         ]);
     }

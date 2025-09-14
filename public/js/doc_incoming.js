@@ -1,4 +1,4 @@
-import { loadDocs } from './modules/docsCrud.js';
+import { loadDocs } from './modules/docsIncoming.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM loaded, initializing...');

@@ -1,16 +1,22 @@
 <?php
 
 namespace App\Http\Controllers;
-
 use App\Http\Controllers\Controller;
+
 use App\Models\Docmain;
 Use App\Models\Docroutes;
+Use App\Models\Sections;
+Use App\Models\User;
+
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+
 use Illuminate\Validation\ValidationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Log;
+use DB;
 use Illuminate\Support\Str;
+use PhpParser\Comment\Doc;
 
 class DocmainController extends Controller
 {
@@ -54,7 +60,7 @@ class DocmainController extends Controller
                 'route_name' => $routeName,
             ]);   
 
-            $sortBy = $request->get('sort_by', 'datetime_route_accepted');
+            $sortBy = $request->get('sort_by', 'dts_docroutes.action_id');
             $sortOrder = strtolower($request->get('sort_order', 'desc')) === 'asc' ? 'asc' : 'desc';
 
             $sortMap = [
@@ -71,7 +77,7 @@ class DocmainController extends Controller
             ];
 
             // if unknown sort request, default to a safe column
-            $sortColumn = $sortMap[$sortBy] ?? 'dts_docroutes.datetime_route_accepted';
+            $sortColumn = $sortMap[$sortBy] ?? 'dts_docroutes.action_id';
 
             // --- base query: select routes and join docs so we can sort by doc fields safely ---
             $query = Docroutes::select('dts_docroutes.*')
@@ -196,42 +202,118 @@ class DocmainController extends Controller
     public function store(Request $request): JsonResponse
     {
         try {
+            // Get authenticated user
+            $user = auth()->user();
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Please log in to submit documents'
+                ], 401);
+            }
+
+            // Validate the request data
             $validatedData = $request->validate([
-                'track_issuedby_userid' => 'required|integer',
                 'doc_type_id' => 'required|integer',
-                'tempdocs_id' => 'nullable|integer',
                 'docs_description' => 'required|string',
-                'origin_fname' => 'nullable|string|max:255',
-                'origin_userid' => 'nullable|integer',
-                'origin_school_id' => 'nullable|integer',
+                'origin_fname' => 'required|string|max:255',
+                'receiving_section' => 'required|integer',
+                'actions_needed' => 'required|string',
+                'route_purpose' => 'required|string',
+                // Optional fields
                 'origin_school' => 'nullable|string|max:255',
                 'origin_section' => 'nullable|integer',
-                'receiving_section' => 'nullable|integer',
-                'actions_needed' => 'nullable|string|max:255',
-                'datetime_posted' => 'required|date',
-                'datetime_accepted' => 'nullable|date',
-                'acceptedby_userid' => 'nullable|integer',
-                'acct_dvnum' => 'nullable|string|max:255',
-                'acct_payee' => 'nullable|string|max:255',
-                'acct_particulars' => 'nullable|string|max:255',
-                'acct_amount' => 'nullable|numeric',
-                'final_actions_made' => 'nullable|string',
-                'done' => 'nullable|integer|in:0,1',
-                'updatedby_id' => 'nullable|integer',
-                'archive_id' => 'nullable|integer',
-                'active' => 'nullable|integer|in:0,1',
-                'deactivate_reason' => 'nullable|string|max:255',
-                'tags' => 'nullable|json',
-                'additional_receivers' => 'nullable|json'
             ]);
 
-            $document = Docmain::create($validatedData);
+            DB::beginTransaction();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Document created successfully',
-                'data' => $document->load(['doctype', 'origin_section', 'origin_office'])
-            ], 201);
+                try {
+                    $docmainData = [
+                    'doc_type_id' => $validatedData['doc_type_id'],
+                    'tempdocs_id' => 0, // Set default value
+                    'docs_description' => $validatedData['docs_description'],
+                    'origin_fname' => $validatedData['origin_fname'],
+                    'origin_userid' => $user->id,
+                    'origin_school_id' => $validatedData['origin_school_id'] ?? 1,
+                    'origin_school' => $validatedData['origin_school'] ?? 'Regional Office',
+                    'origin_section' => $user->section_id,
+                    'receiving_section' => $validatedData['receiving_section'],
+                    'actions_needed' => $validatedData['actions_needed'],
+                    'datetime_posted' => now(),
+                    'track_issuedby_userid' => $user->id,
+                    'active' => 1,
+                    // Set default values for nullable columns
+                    'datetime_accepted' =>  null,
+                    'acceptedby_userid' => 0,
+                    'acct_dvnum' => '',
+                    'acct_payee' => '',
+                    'acct_particulars' => '',
+                    'acct_amount' => 0,
+                    'final_actions_made' => '',
+                    'updatedby_id' => 0,
+                    'archive_id' => 0,
+                    'deactivate_reason' => ''
+                ];
+
+                Log::info("Creating document", [
+                    'user_id' => $user->id,
+                    'docmainData' => $docmainData
+                ]);
+
+                // Create the document
+                $document = Docmain::create($docmainData);
+                
+                // Update tracking number
+                $document->doc_tracking = date('y') . '-' . str_pad($document->doc_id, 3, '0', STR_PAD_LEFT);
+                $document->save();
+
+                // Get destination section
+                $toSection = Sections::where('section_id', $validatedData['receiving_section'])->first();
+
+                //$fromUser = User::where('id', $request->employee)->first();
+
+                //->update(['doc_tracking' => 'DTS' . str_pad($document->doc_id, 7, '0', STR_PAD_LEFT)]);
+                
+                // Handle file upload if present
+                // if ($request->hasFile('document_file')) {
+                //     $file = $request->file('document_file');
+                //     $filename = time() . '_' . $file->getClientOriginalName();
+                //     $file->storeAs('documents', $filename, 'public');
+                    
+                //     // You might want to save the file path to the document
+                //     $document->update(['file_path' => 'documents/' . $filename]);
+                // }
+
+                // Create the initial route entry
+                $routeData = [
+                    'document_id' => $document->doc_id,
+                    'previous_route_id' => 0,
+                    'route_fromuser_id' => $user->id,
+                    'route_from' => $user->name,
+                    'route_fromsection_id' => $user->section_id,
+                    'route_fromsection' => $user->section->section_name ?? '',
+                    'route_tosection_id' => $validatedData['receiving_section'],
+                    'route_tosection' => $toSection->section_name ?? '',
+                    'route_touser_id' => 0,
+                    'route_purpose' => $validatedData['actions_needed'],
+                    'datetime_forwarded' => now(),
+                    'datetime_route_accepted' => null,
+                    'active' => 1
+                ];
+
+                Docroutes::create($routeData);
+
+                DB::commit();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Document submitted successfully',
+                    'data' => $document->load(['doctype', 'origin_section', 'origin_office'])
+                ], 201);
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                throw $e;
+            }
 
         } catch (ValidationException $e) {
             return response()->json([
@@ -241,6 +323,14 @@ class DocmainController extends Controller
             ], 422);
 
         } catch (\Exception $e) {
+            Log::error('Error creating document', [
+                'message' => $e->getMessage(),
+                // 'file' => $e->getFile(),
+                // 'line' => $e->getLine(),
+                // 'trace' => $e->getTraceAsString(),
+                'user_id' => $user->id ?? null,
+            ]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Error creating document',
@@ -571,6 +661,164 @@ class DocmainController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error retrieving statistics',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+    /**
+ * Accept a document route
+ */
+public function acceptRoute($actionId): JsonResponse
+{
+    try {
+        $user = auth()->user();
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Authentication required'
+            ], 401);
+        }
+
+        $route = Docroutes::findOrFail($actionId);
+        
+        // Check if user is authorized to accept this route
+        if ($route->route_tosection_id != $user->section_id && $route->route_touser_id != 0 && $route->route_touser_id != $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You are not authorized to accept this document'
+            ], 403);
+        }
+
+        $route->update([
+            'datetime_route_accepted' => now(),
+            'receivedby_id' => $user->id,
+            'received_by' => $user->name,
+            'route_touser_id' => $user->id
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Document accepted successfully',
+            'data' => $route->load('document')
+        ]);
+
+    } catch (ModelNotFoundException $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Document route not found'
+        ], 404);
+    } catch (\Exception $e) {
+        Log::error('Error accepting document route', [
+            'action_id' => $actionId,
+            'error' => $e->getMessage(),
+            'user_id' => auth()->id()
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Error accepting document',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+ * Forward a document to another section/user
+ */
+public function forwardRoute(Request $request, $actionId): JsonResponse
+{
+    try {
+            $user = auth()->user();
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Authentication required'
+                ], 401);
+            }
+
+            $validatedData = $request->validate([
+                'route_tosection_id' => 'required|integer',
+                'route_touser_id' => 'nullable|integer',
+                'route_purpose' => 'required|string',
+                'fwd_remarks' => 'nullable|string'
+            ]);
+
+            $currentRoute = Docroutes::findOrFail($actionId);
+            
+            // Check if user is authorized to forward this document
+            if ($currentRoute->route_touser_id != $user->id && $currentRoute->route_tosection_id != $user->section_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You are not authorized to forward this document'
+                ], 403);
+            }
+
+            DB::beginTransaction();
+
+            try {
+                // Mark current route as accomplished
+                $currentRoute->update([
+                    'route_accomplished' => 3, // Forwarded
+                    'actions_taken' => 'Document forwarded to ' . $this->getSectionName($validatedData['route_tosection_id']),
+                    'actions_datetime' => now(),
+                    'actedby_id' => $user->id,
+                    'acted_by' => $user->name
+                ]);
+
+                // Create new route
+                $newRouteData = [
+                    'document_id' => $currentRoute->document_id,
+                    'previous_route_id' => $actionId,
+                    'route_fromuser_id' => $user->id,
+                    'route_from' => $user->name,
+                    'route_fromsection_id' => $user->section_id,
+                    'route_fromsection' => $user->section->section_name ?? '',
+                    'route_tosection_id' => $validatedData['route_tosection_id'],
+                    'route_tosection' => $this->getSectionName($validatedData['route_tosection_id']),
+                    'route_touser_id' => $validatedData['route_touser_id'] ?? 0,
+                    'route_purpose' => $validatedData['route_purpose'],
+                    'fwd_remarks' => $validatedData['fwd_remarks'] ?? '',
+                    'datetime_forwarded' => now(),
+                    'datetime_route_accepted' => 0,
+                    'active' => 1
+                ];
+
+                $newRoute = Docroutes::create($newRouteData);
+
+                DB::commit();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Document forwarded successfully',
+                    'data' => $newRoute->load('document')
+                ]);
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                throw $e;
+            }
+
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Document route not found'
+            ], 404);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Error forwarding document route', [
+                'action_id' => $actionId,
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error forwarding document',
                 'error' => $e->getMessage()
             ], 500);
         }

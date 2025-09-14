@@ -6,10 +6,10 @@ use App\Http\Middleware\VerifySanctumToken;
 Route::view('/search', 'search')->name('search');
 Route::view('/login', 'auth.login')->name('login');
 Route::view('/register', 'auth.register')->name('register');
-Route::view('/', 'welcome')->name('home');
+
 
 Route::middleware(VerifySanctumToken::class)->group(function () {
-
+    Route::view('/', 'incoming')->name('incoming');
     Route::get('/add', function () {return view('add');})->name('add');
     Route::get('/find', function () {return view('find');})->name('find');
     Route::get('/profile', function () {return view('profile');})->name('profile');

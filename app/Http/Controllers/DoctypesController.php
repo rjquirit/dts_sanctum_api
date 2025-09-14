@@ -6,30 +6,38 @@ use App\Http\Controllers\Controller;
 use App\Models\Doctypes;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Http\JsonResponse;
 
 class DoctypesController extends Controller
 {
-    public function index(Request $request)
+    //public function index(Request $request)
+    public function index(): JsonResponse
     {
-        try {
-            $perPage = $request->input('per_page', 10);
-            $search = $request->input('search', '');
+        $doctypes = Doctypes::all();
+        return response()->json([
+            'data' => $doctypes,
+            'message' => 'Document Types retrieved successfully'
+        ]);
+        // try {
+        //     $perPage = $request->input('per_page', 10);
+        //     $search = $request->input('search', '');
             
-            $query = Doctypes::when($search, function($q) use ($search) {
-                return $q->where('doctype_description', 'like', "%{$search}%");
-            });
+        //     $query = Doctypes::when($search, function($q) use ($search) {
+        //         return $q->where('doctype_description', 'like', "%{$search}%");
+        //     });
 
-            $doctypes = $query->paginate($perPage);
+        //     $doctypes = $query->paginate($perPage);
 
-            return response()->json([
-                'doctypes' => $doctypes
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Failed to fetch document types',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+        //     return response()->json([
+        //         'doctypes' => $doctypes
+        //     ]);
+        // } catch (\Exception $e) {
+        //     return response()->json([
+        //         'message' => 'Failed to fetch document types',
+        //         'error' => $e->getMessage()
+        //     ], 500);
+        // }
+
     }
 
     public function store(Request $request)

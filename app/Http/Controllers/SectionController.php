@@ -11,10 +11,19 @@ class SectionController extends Controller
 {
     public function index(): JsonResponse
     {
-        $sections = Sections::paginate(10);
+        $sections = Sections::all();
         return response()->json([
             'data' => $sections,
             'message' => 'Sections retrieved successfully'
+        ]);
+    }
+
+    public function getsections(Request $request): JsonResponse
+    {
+        $sections = Sections::where('section_id', $request->section_id)->get();
+        return response()->json([
+            'data' => $sections,
+            'message' => 'Section name retrieved successfully'
         ]);
     }
 

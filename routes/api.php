@@ -25,11 +25,13 @@ Route::get('/docmain/track/{doc_id}', [DocumentTrackingController::class, 'track
 Route::get('/docroutes/{doc_id}', [DocroutesController::class, 'routesForDoc']);
 
 Route::prefix('test')->group(function () {
+    Route::get('/sectionname/{section_id}', [SectionController::class, 'getsections'])->name('test.section');
     Route::get('/users', [UserController::class, 'index'])->name('test.users');
     Route::get('/sections', [SectionController::class, 'index'])->name('test.section');
     Route::get('/doctypes', [DoctypesController::class, 'index'])->name('test.doctypes');
     Route::get('/offices', [OfficeController::class, 'index'])->name('test.offices');
     Route::get('/auth/check', [AuthController::class, 'check']);
+
 
     Route::get('/documents-stats', [DocmainController::class, 'stats']);
     Route::get('/alldocs', [DocmainController::class, 'index'])->name('test.alldocs');
@@ -50,17 +52,19 @@ Route::middleware('auth:sanctum')->group(function () {
     // Route::get('/documents/forward', [DocmainController::class, 'index'])->defaults('type', 'forward')->name('documents.forward');
     // Route::get('/documents/deferred', [DocmainController::class, 'index'])->defaults('type', 'deferred')->name('documents.deferred');
     
-    Route::apiResource('users', UserController::class);
-    Route::apiResource('sections', SectionController::class);
-    Route::apiResource('doctypes', DoctypesController::class);
-    Route::apiResource('offices', OfficeController::class);
-    Route::apiResource('documents', DocmainController::class);
-
+    Route::post('documents/routes/{actionId}/accept', [DocmainController::class, 'acceptRoute']);
+    Route::post('documents/routes/{actionId}/forward', [DocmainController::class, 'forwardRoute']);
     Route::post('documents/{id}/deactivate', [DocmainController::class, 'deactivate']);
     Route::post('documents/{id}/activate', [DocmainController::class, 'activate']);
     Route::post('documents/{id}/mark-done', [DocmainController::class, 'markDone']);
     Route::post('documents/{id}/accept', [DocmainController::class, 'accept']);
     Route::get('documents-stats', [DocmainController::class, 'stats']);
+
+    Route::apiResource('users', UserController::class);
+    Route::apiResource('sections', SectionController::class);
+    Route::apiResource('doctypes', DoctypesController::class);
+    Route::apiResource('offices', OfficeController::class);
+    Route::apiResource('documents', DocmainController::class);
 
     Route::get('/two-factor', [TwoFactorAuthenticationController::class, 'index']); // status
     Route::post('/two-factor', [TwoFactorAuthenticationController::class, 'store']); // enable

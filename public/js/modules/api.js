@@ -170,18 +170,19 @@ async function retryRequest(endpoint, options, attempt = 1) {
 /**
  * Get current auth token
  */
-function getAuthToken() {
-    // First check localStorage for auth_token
-    const token = localStorage.getItem('auth_token');
+export function getAuthToken() {
+    // Check localStorage with consistent key
+    const token = localStorage.getItem('auth_token') || 
+                 localStorage.getItem('access_token');
     if (token) return token;
+    
+    // Check user data
+    const userData = JSON.parse(localStorage.getItem('user') || '{}');
+    if (userData.access_token) return userData.access_token;
     
     // Fallback to meta tag
     const tokenMeta = document.querySelector('meta[name="api-token"]');
-    if (tokenMeta) {
-        return tokenMeta.getAttribute('content');
-    }
-    
-    return '';
+    return tokenMeta ? tokenMeta.getAttribute('content') : '';
 }
 
 /**

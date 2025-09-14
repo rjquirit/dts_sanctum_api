@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\Sections;
 use Illuminate\Http\Request;
 use Laravel\Socialite\Facades\Socialite;
 use Illuminate\Support\Facades\Log;
@@ -77,12 +78,14 @@ class GoogleController extends Controller
                     'email'      => $googleUser->getEmail(),
                     'position'   => $user->position,
                     'section_id' => $user->section_id,
+                    'section_name' => Sections::select('section_description')->where('section_id', $user->section_id)->first()->section_description,
                     'avatar'     => $user->avatar,  
                 ],
             ];
 
             Log::info('GoogleController: Google login successful, returning JSON with cookie', [
                 'user_id' => $user->id,
+                'section_name' => Sections::where('section_id', $user->section_id)->first()->name,
                 'response_has_token' => isset($responseData['access_token']),
                 'response_token_length' => strlen($responseData['access_token']),
                 'cookie_will_be_attached' => true
