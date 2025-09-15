@@ -33,7 +33,9 @@ function renderDocs(docs, tableBodySelector) {
 
         
         tr.innerHTML = `
-            <td data-label='Tracking'><b>${escapeHtml(doc.doc_tracking)}</b></td>
+            <td data-label='Tracking'><b>
+                <a href="#" class="tracking-link">${escapeHtml(doc.doc_tracking)}</a>
+            </b></td>
             <td data-label='Description'>
             <b>${escapeHtml(doc.doctype_description)}</b> <br> 
             ${escapeHtml(doc.docs_description)}<br>
@@ -65,7 +67,7 @@ function renderDocs(docs, tableBodySelector) {
     if (noDataMessage) {
         noDataMessage.style.display = docs.length === 0 ? 'block' : 'none';
     }
-
+    addDocumentClickHandlers();
     console.log(`Rendered ${docs.length} documents`); // Debug log
 }
 
@@ -398,5 +400,197 @@ export function bindDocsActions(formSelector, tableBodySelector) {
             // Redirect to find.blade.php with tracking number as URL parameter
             window.location.href = `/find?tracking=${encodeURIComponent(trackingNumber)}`;
         }
+    });
+}
+
+// Add these functions to your module
+function showDocumentModal(trackingNumber) {
+    const modal = new bootstrap.Modal(document.getElementById('documentDetailsModal'));
+    
+    // Show loading state
+    document.getElementById('modalDocumentDetailsContent').innerHTML = '<div class="text-center"><div class="spinner-border" role="status"></div></div>';
+    document.getElementById('modalDocumentTimeline').innerHTML = '';
+    
+    // Fetch document details
+    fetch(`/api/docmain/track/${trackingNumber}`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.document) {
+            displayModalDocument(data);
+        } else {
+            throw new Error('Document not found or invalid response format');
+        }
+    })
+    .catch(error => {
+        document.getElementById('modalDocumentDetailsContent').innerHTML = `
+            <div class="alert alert-danger">
+                Error loading document details: ${error.message}
+            </div>
+        `;
+    });
+
+    modal.show();
+}
+
+function formatDateTime(dateString) {
+    if (!dateString) return 'N/A';
+    const options = { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric', 
+        hour: '2-digit', 
+        minute: '2-digit' 
+    };
+    return new Date(dateString).toLocaleString(undefined, options);
+}
+
+function getStatusBadgeClass(done) {
+    return done == 1 ? 'bg-success' : 'bg-warning';
+}
+
+function getActionsBadgeClass(actions) {
+    if (!actions) return 'bg-secondary';
+    switch(actions.toLowerCase()) {
+        case 'urgent':
+            return 'bg-danger';
+        case 'immediate':
+            return 'bg-warning';
+        default:
+            return 'bg-info';
+    }
+}
+
+// Update the displayModalDocument function
+function displayModalDocument(data) {
+    const doc = data.document; // Renamed from document to doc
+    
+    // Display document details
+    const detailsContent = document.getElementById('modalDocumentDetailsContent');
+    if (!detailsContent) {
+        console.error('modalDocumentDetailsContent element not found');
+        return;
+    }
+    
+    detailsContent.innerHTML = `
+        <div class="detail-row">
+            <div class="detail-label">Document ID:</div>
+            <div class="detail-value">${doc.doc_id || 'N/A'}</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Tracking Number:</div>
+            <div class="detail-value"><strong>${doc.doc_tracking || 'N/A'}</strong></div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">From:</div>
+            <div class="detail-value">${doc.origin_fname || 'N/A'}</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Office/School:</div>
+            <div class="detail-value">${doc.origin_school || 'N/A'}</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Origin Section:</div>
+            <div class="detail-value">${doc.origin_section ? doc.origin_section.section_description : 'N/A'}</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Date Posted:</div>
+            <div class="detail-value">${formatDateTime(doc.datetime_posted)}</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Document Type:</div>
+            <div class="detail-value">${doc.doctype ? doc.doctype.doctype_description : 'N/A'}</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Description:</div>
+            <div class="detail-value">${doc.docs_description || 'N/A'}</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Actions Needed:</div>
+            <div class="detail-value">
+                <span class="badge ${getActionsBadgeClass(doc.actions_needed)}">${doc.actions_needed || 'N/A'}</span>
+            </div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Status:</div>
+            <div class="detail-value">
+                <span class="badge ${getStatusBadgeClass(doc.done)}">${doc.done == 1 ? 'Completed' : 'In Progress'}</span>
+            </div>
+        </div>
+    `;
+
+    // Display timeline
+    const timelineContainer = document.getElementById('modalDocumentTimeline');
+    if (!timelineContainer) {
+        console.error('modalDocumentTimeline element not found');
+        return;
+    }
+
+    if (data.routes && data.routes.length > 0) {
+        let timelineHTML = '';
+        data.routes.forEach((route) => {
+            const isActive = !route.route_accomplished;
+            const isAccepted = route.datetime_route_accepted !== "-000001-11-30T00:00:00.000000Z";
+            const hasActions = route.actions_datetime !== "-000001-11-30T00:00:00.000000Z";
+            
+            let statusText = 'Forwarded';
+            let statusClass = 'forwarded';
+            
+            if (hasActions) {
+                statusText = 'Actions Taken';
+                statusClass = 'completed';
+            } else if (isAccepted) {
+                statusText = 'Received';
+                statusClass = 'received';
+            } else {
+                statusText = 'Pending';
+                statusClass = 'pending';
+            }
+            
+            timelineHTML += `
+                <div class="timeline-item ${isActive ? 'active' : ''} ${statusClass}">
+                    <div class="timeline-date">${formatDateTime(route.datetime_forwarded)}</div>
+                    <div class="timeline-title">${statusText}</div>
+                    <div class="timeline-details">
+                        <strong>From:</strong> ${route.route_from || 'N/A'}<br>
+                        <strong>From Section:</strong> ${route.route_fromsection || 'N/A'}<br>
+                        <strong>To Section:</strong> ${route.route_tosection || 'N/A'}<br>
+                        <strong>Purpose:</strong> ${route.route_purpose || 'N/A'}<br>
+                        ${route.fwd_remarks ? `<strong>Forwarding Remarks:</strong> ${route.fwd_remarks}<br>` : ''}
+                        ${isAccepted ? `<strong>Received:</strong> ${formatDateTime(route.datetime_route_accepted)}<br>` : ''}
+                        ${route.received_by ? `<strong>Received By:</strong> ${route.received_by}<br>` : ''}
+                        ${route.accepting_remarks ? `<strong>Receiving Remarks:</strong> ${route.accepting_remarks}<br>` : ''}
+                        ${hasActions ? `<strong>Actions Date:</strong> ${formatDateTime(route.actions_datetime)}<br>` : ''}
+                        ${route.actions_taken ? `<strong>Actions Taken:</strong> ${route.actions_taken}<br>` : ''}
+                        ${route.acted_by ? `<strong>Acted By:</strong> ${route.acted_by}<br>` : ''}
+                        ${route.end_remarks ? `<strong>End Remarks:</strong> ${route.end_remarks}` : ''}
+                    </div>
+                </div>
+            `;
+        });
+        timelineContainer.innerHTML = timelineHTML;
+    } else {
+        timelineContainer.innerHTML = '<p class="text-center text-muted">No route information available</p>';
+    }
+}
+
+// Add click event listener in your renderDocs function
+function addDocumentClickHandlers() {
+    document.querySelectorAll('.tracking-link').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const trackingNumber = e.target.textContent;
+            showDocumentModal(trackingNumber);
+        });
     });
 }

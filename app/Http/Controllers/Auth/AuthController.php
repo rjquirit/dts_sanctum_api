@@ -30,7 +30,7 @@ class AuthController extends Controller
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
-            'access_token' => $token,
+            'auth_token' => $token,
             'token_type' => 'Bearer',
             'user' => $user,
         ]);
@@ -90,7 +90,7 @@ class AuthController extends Controller
 
         $responseData = [
             'isAuthenticated' => true,
-            'access_token' => $token,
+            'auth_token' => $token,
             'token_type' => 'Bearer',
             'user' => [
                 'id'         => $user->id,
@@ -105,8 +105,8 @@ class AuthController extends Controller
 
         Log::info('AuthController: Login successful, returning response with cookie', [
             'user_id' => $user->id,
-            'response_has_token' => isset($responseData['access_token']),
-            'response_token_length' => strlen($responseData['access_token']),
+            'response_has_token' => isset($responseData['auth_token']),
+            'response_token_length' => strlen($responseData['auth_token']),
             'section_name' => Sections::select('section_description')->where('section_id', $user->section_id)->first()->section_description,
             'cookie_will_be_attached' => true
         ]);

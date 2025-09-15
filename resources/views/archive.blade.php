@@ -1,37 +1,85 @@
 @extends('layouts.user')
 @section('content')
 <style>
-/* Sortable table headers */
-th.sortable {
-    cursor: pointer;
-    position: relative;
-    user-select: none;
-    white-space: nowrap;
-}
 
-th.sortable:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-}
-
-th.sortable i {
-    opacity: 0.6;
-    transition: opacity 0.2s;
-}
-
-th.sortable:hover i {
-    opacity: 1;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    th.sortable {
+    
+    .detail-row {
+        display: flex;
+        margin-bottom: 0.5rem;
+        border-bottom: 1px solid #eee;
+        padding: 0.5rem 0;
+    }
+    
+    .detail-label {
+        width: 150px;
+        font-weight: bold;
+        color: #666;
+    }
+    
+    .detail-value {
+        flex: 1;
+    }
+    
+    .timeline-item {
+        border-left: 3px solid #ccc;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        position: relative;
+    }
+    
+    .timeline-item:before {
+        content: '';
+        position: absolute;
+        left: -8px;
+        top: 20px;
+        width: 13px;
+        height: 13px;
+        border-radius: 50%;
+        background: #fff;
+        border: 3px solid #ccc;
+    }
+    
+    .timeline-date {
+        color: #666;
         font-size: 0.9rem;
     }
     
-    th.sortable i {
-        font-size: 0.8em;
+    .timeline-title {
+        font-weight: bold;
+        margin: 0.5rem 0;
     }
-}
+    
+    .timeline-details {
+        background: #f8f9fa;
+        padding: 0.75rem;
+        border-radius: 4px;
+        font-size: 0.9rem;
+    }
+    
+    .timeline-item.completed {
+        border-left-color: #28a745;
+    }
+    
+    .timeline-item.completed:before {
+        border-color: #28a745;
+    }
+    
+    .timeline-item.received {
+        border-left-color: #17a2b8;
+    }
+    
+    .timeline-item.received:before {
+        border-color: #17a2b8;
+    }
+    
+    .timeline-item.pending {
+        border-left-color: #ffc107;
+    }
+    
+    .timeline-item.pending:before {
+        border-color: #ffc107;
+    }
+
 </style>
 <div class="container-fluid">
     <div class="row">
@@ -147,7 +195,43 @@ th.sortable:hover i {
         </div>
     </div>
 </div>
+<!-- Add this after your existing modals -->
+<div class="modal fade" id="documentDetailsModal" tabindex="-1" aria-labelledby="documentDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="documentDetailsModalLabel">Document Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Document Details Section -->
+                <div class="document-section">
+                    <div class="document-details">
+                        <div class="card-header">
+                            <i class="fas fa-file-alt"></i> Document Details
+                        </div>
+                        <div id="modalDocumentDetailsContent">
+                            <!-- Document details will be populated here -->
+                        </div>
+                    </div>
 
+                    <!-- Document Route Timeline -->
+                    <div class="timeline-container mt-4">
+                        <div class="card-header">
+                            <i class="fas fa-route"></i> Document Route
+                        </div>
+                        <div class="timeline" id="modalDocumentTimeline">
+                            <!-- Timeline items will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 @push('scripts')
 <script type="module" src="{{ asset('js/doc_deferred.js') }}"></script>
 @endpush

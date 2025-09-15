@@ -81,7 +81,7 @@ export function bindRegister(formSelector) {
             if (response.ok) {
                 // Cache user data for offline access
                 localStorage.setItem('user', JSON.stringify(responseData.user));
-                localStorage.setItem('auth_token', responseData.access_token);
+                localStorage.setItem('auth_token', responseData.auth_token);
                 window.location.href = '/';
             } else {
                 showAlert(responseData.message || 'Registration failed. Please try again.', 'danger', form);
@@ -149,11 +149,11 @@ export function bindLogin(formSelector) {
       if (response.ok) {
         // Cache user data for offline access
         localStorage.setItem('user', JSON.stringify(responseData.user));
-        localStorage.setItem('auth_token', responseData.access_token); // Add this line to store the token
+        localStorage.setItem('auth_token', responseData.auth_token); // Change auth_token to auth_token
         
         console.log('Login successful:', {
           user: responseData.user,
-          token: responseData.access_token
+          token: responseData.auth_token // Change auth_token to auth_token
         });
         
         window.location.href = '/incoming';
@@ -445,7 +445,7 @@ export function bindGoogleLogin(buttonSelector) {
     // Final handler for parsed response
     async function handleOauthResponse(responseData) {
       // Example expected shape:
-      // { isAuthenticated: true, access_token: 'xxx', token_type: 'Bearer', user: {id, name, email, ...} }
+      // { isAuthenticated: true, auth_token: 'xxx', token_type: 'Bearer', user: {id, name, email, ...} }
       if (!responseData) {
         showAlert('No response received from authentication server.', 'danger');
         return;
@@ -455,11 +455,11 @@ export function bindGoogleLogin(buttonSelector) {
         try {
           // Persist like your other login handler
           localStorage.setItem('user', JSON.stringify(responseData.user));
-          localStorage.setItem('auth_token', responseData.access_token);
+          localStorage.setItem('auth_token', responseData.auth_token);
 
           console.log('Google login successful:', {
             user: responseData.user,
-            token: responseData.access_token
+            token: responseData.auth_token
           });
 
           // NOTE: the backend should set the httpOnly cookie `auth_token` on the OAuth callback response.

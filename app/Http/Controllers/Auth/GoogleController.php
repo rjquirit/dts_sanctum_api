@@ -70,7 +70,7 @@ class GoogleController extends Controller
 
             $responseData = [
                 'isAuthenticated' => true,
-                'access_token' => $token,
+                'auth_token' => $token,
                 'token_type' => 'Bearer',
                 'user' => [
                     'id'         => $user->id,
@@ -86,8 +86,8 @@ class GoogleController extends Controller
             Log::info('GoogleController: Google login successful, returning JSON with cookie', [
                 'user_id' => $user->id,
                 'section_name' => Sections::where('section_id', $user->section_id)->first()->name,
-                'response_has_token' => isset($responseData['access_token']),
-                'response_token_length' => strlen($responseData['access_token']),
+                'response_has_token' => isset($responseData['auth_token']),
+                'response_token_length' => strlen($responseData['auth_token']),
                 'cookie_will_be_attached' => true
             ]);
 

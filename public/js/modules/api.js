@@ -172,13 +172,12 @@ async function retryRequest(endpoint, options, attempt = 1) {
  */
 export function getAuthToken() {
     // Check localStorage with consistent key
-    const token = localStorage.getItem('auth_token') || 
-                 localStorage.getItem('access_token');
+    const token = localStorage.getItem('auth_token');
     if (token) return token;
     
     // Check user data
     const userData = JSON.parse(localStorage.getItem('user') || '{}');
-    if (userData.access_token) return userData.access_token;
+    if (userData.auth_token) return userData.auth_token;
     
     // Fallback to meta tag
     const tokenMeta = document.querySelector('meta[name="api-token"]');
