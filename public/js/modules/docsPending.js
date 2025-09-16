@@ -51,6 +51,7 @@ function renderDocs(docs, tableBodySelector) {
             </td>
             <td data-label='Date'>${escapeHtml(postedDate)}</td>
             <td data-label='Action'>
+            <input type="hidden" class="doc-id" name="action_id" value="${escapeHtml(doc.action_id)}">
                 <button class="btn btn-sm btn-info view" aria-label="Print Trail">
                     <i class="fas fa-print"></i>
                 </button>                

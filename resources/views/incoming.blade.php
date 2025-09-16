@@ -232,6 +232,50 @@
         </div>
     </div>
 </div>
+
+<!-- Accept Document Modal -->
+<div class="modal fade" id="acceptDocumentModal" tabindex="-1" aria-labelledby="acceptDocumentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="acceptDocumentModalLabel">Accept Document</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Document Info -->
+                <div class="document-info mb-3">
+                    <div class="row">
+                        <div class="col-4 fw-bold">Tracking #:</div>
+                        <div class="col-8" id="acceptDocTracking"></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4 fw-bold">Description:</div>
+                        <div class="col-8" id="acceptDocDescription"></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4 fw-bold">From:</div>
+                        <div class="col-8" id="acceptDocFrom"></div>
+                    </div>
+                </div>
+                
+                <!-- Accept Form -->
+                <form id="acceptDocumentForm">
+                    <input type="hidden" id="acceptActionId" name="actionid">
+                    <div class="mb-3">
+                        <meta name="csrf-token" content="{{ csrf_token() }}">
+                        <label for="accepting_remarks" class="form-label">Accepting Remarks</label>
+                        <textarea class="form-control" id="accepting_remarks" name="accepting_remarks" rows="3" placeholder="Enter your remarks (optional)"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" id="confirmAcceptBtn">Accept Document</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @push('scripts')
 <script type="module" src="{{ asset('js/doc_incoming.js') }}"></script>
 @endpush

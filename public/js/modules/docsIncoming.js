@@ -51,6 +51,7 @@ function renderDocs(docs, tableBodySelector) {
             </td>
             <td data-label='Date'>${escapeHtml(postedDate)}</td>
             <td data-label='Action'>
+                <input type="hidden" class="doc-id" name="action_id" value="${escapeHtml(doc.action_id)}">
                 <button class="btn btn-sm btn-info view" aria-label="Print Trail">
                     <i class="fas fa-print"></i>
                 </button>
@@ -594,4 +595,63 @@ function addDocumentClickHandlers() {
             showDocumentModal(trackingNumber);
         });
     });
+}
+
+// Add this export function
+export async function acceptDocument(actionId, remarks) {
+    if (!isOnline()) {
+        throw new Error('Cannot accept document while offline');
+    }
+
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+        throw new Error('Authentication required');
+    }
+
+    try {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+        if (!csrfToken) {
+            throw new Error('CSRF token not found');
+        }
+
+        // Log the request details for debugging
+        console.log('Sending accept request:', {
+            url: `/api/documents/routes/${actionId}/accept`,
+            actionId,
+            remarks
+        });
+
+        const response = await fetch(`/api/documents/routes/${actionId}/accept`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest',
+                'Authorization': `Bearer ${token}`
+            },
+            credentials: 'include', // Include cookies
+            body: JSON.stringify({
+                actionid: parseInt(actionId), // Ensure integer
+                accepting_remarks: remarks || null // Ensure null if empty
+            })
+        });
+
+        // Log the raw response for debugging
+        console.log('Raw response:', response);
+
+        const responseData = await response.json();
+        console.log('Response data:', responseData);
+
+        if (!response.ok) {
+            throw new Error(responseData.message || responseData.error || 'Failed to accept document');
+        }
+
+        return responseData;
+
+    } catch (error) {
+        console.error('Error in acceptDocument:', error);
+        // Provide more detailed error information
+        throw new Error(`Error accepting document: ${error.message}`);
+    }
 }

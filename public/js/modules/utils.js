@@ -1,4 +1,3 @@
-
 /**
  * Check if the browser is online
  */
@@ -16,8 +15,26 @@ export function showError(message, container = null) {
 /**
  * Show success message
  */
-export function showSuccess(message, container = null) {
-    showAlert(message, 'success', container);
+export function showSuccess(message) {
+    // You can use your preferred alert/toast library here
+    // For example, using Bootstrap's toast:
+    const toast = document.createElement('div');
+    toast.className = 'toast align-items-center text-white bg-success border-0 position-fixed top-0 end-0 m-3';
+    toast.setAttribute('role', 'alert');
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                ${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    `;
+    document.body.appendChild(toast);
+    const bsToast = new bootstrap.Toast(toast);
+    bsToast.show();
+    
+    // Remove toast after it's hidden
+    toast.addEventListener('hidden.bs.toast', () => toast.remove());
 }
 
 /**
