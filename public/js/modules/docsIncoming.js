@@ -51,12 +51,13 @@ function renderDocs(docs, tableBodySelector) {
             </td>
             <td data-label='Date'>${escapeHtml(postedDate)}</td>
             <td data-label='Action'>
-                <button class="btn btn-sm btn-info view" aria-label="View document">
-                    <i class="fas fa-eye"></i>
+                <button class="btn btn-sm btn-info view" aria-label="Print Trail">
+                    <i class="fas fa-print"></i>
                 </button>
-                <button class="btn btn-sm btn-primary forward" aria-label="Forward document">
-                    <i class="fas fa-share"></i>
+                <button class="btn btn-sm btn-success forward" aria-label="Accept document">
+                    <i class="fas fa-check-circle"></i>
                 </button>
+
             </td>
         `;
         tbody.appendChild(tr);

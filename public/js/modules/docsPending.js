@@ -51,11 +51,17 @@ function renderDocs(docs, tableBodySelector) {
             </td>
             <td data-label='Date'>${escapeHtml(postedDate)}</td>
             <td data-label='Action'>
-                <button class="btn btn-sm btn-info view" aria-label="View document">
-                    <i class="fas fa-eye"></i>
-                </button>
+                <button class="btn btn-sm btn-info view" aria-label="Print Trail">
+                    <i class="fas fa-print"></i>
+                </button>                
                 <button class="btn btn-sm btn-primary forward" aria-label="Forward document">
                     <i class="fas fa-share"></i>
+                </button>
+                <button class="btn btn-sm btn-secondary forward" aria-label="Keep document">
+                    <i class="fas fa-save"></i>
+                </button>
+                <button class="btn btn-sm btn-warning forward" aria-label="Deferred document">
+                    <i class="fas fa-clock"></i>
                 </button>
             </td>
         `;
