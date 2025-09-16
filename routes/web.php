@@ -15,6 +15,7 @@ Route::middleware(VerifySanctumToken::class)->group(function () {
     Route::get('/profile', function () {return view('profile');})->name('profile');
 
     //document views
+    Route::get('/mydocs', fn() => view('mydocs', ['type' => 'mydocs']))->name('mydocs');
     Route::get('/incoming', fn() => view('incoming', ['type' => 'incoming']))->name('incoming');
     Route::get('/pending', fn() => view('pending', ['type' => 'pending']))->name('pending');  
     Route::get('/forward', fn() => view('forward', ['type' => 'forward']))->name('forward');

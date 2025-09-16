@@ -25,6 +25,17 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16.png">
     
     @yield('styles')
+      <style>
+    .fab {
+      position: fixed;
+      bottom: 70px;
+      right: 10px;
+      border-radius: 50%;
+      z-index: 1030; /* higher than navbar */
+    }
+
+
+  </style>
 </head>
 <body>
     <!-- Main App Container -->
@@ -59,9 +70,9 @@
         <!-- Sidebar Navigation (Desktop/Landscape) -->
         <aside class="sidebar" id="sidebar">
             <ul class="sidebar-nav">
-                <li><a href="{{ route('add') }}" class="nav-link {{ request()->routeIs('add') ? 'active' : '' }}">
-                    <i class="fas fa-plus"></i>
-                    <span>New Document</span>
+                <li><a href="{{ route('mydocs') }}" class="nav-link {{ request()->routeIs('mydocs') ? 'active' : '' }}">
+                    <i class="fas fa-folder"></i>
+                    <span>My Document</span>
                 </a></li>
                 <li><a href="{{ route('incoming') }}" class="nav-link {{ request()->routeIs('incoming') ? 'active' : '' }}">
                     <i class="fas fa-inbox"></i>
@@ -85,13 +96,14 @@
         <!-- Main Content Area -->
         <main class="main-content">
             @yield('content')
+            <a href="{{ route('add') }}" class="btn btn-primary d-flex align-items-center justify-content-center fab shadow-lg">+</a>
         </main>
 
         <!-- Bottom Navigation (Mobile/Portrait) -->
         <nav class="bottom-nav" id="bottomNav">
-            <a href="{{ route('add') }}" class="nav-item {{ request()->routeIs('add') ? 'active' : '' }}">
-                <i class="fas fa-plus"></i>
-                <span>New</span>
+            <a href="{{ route('mydocs') }}" class="nav-item {{ request()->routeIs('mydocs') ? 'active' : '' }}">
+                <i class="fas fa-folder"></i>
+                <span>MyDocs</span>
             </a>
             <a href="{{ route('incoming') }}" class="nav-item {{ request()->routeIs('incoming') ? 'active' : '' }}">
                 <i class="fas fa-inbox"></i>

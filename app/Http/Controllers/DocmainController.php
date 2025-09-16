@@ -51,6 +51,7 @@ class DocmainController extends Controller
                 'pending'  => 2, '2' => 2,
                 'forward'  => 3, '3' => 3,
                 'deferred' => 4, '4' => 4,
+                'mydocs'   => 5, '5' => 5,
             ];
             $case = $typeMap[$typeInput] ?? 1; // default to incoming
             Log::info("DocmainController@index called", [
@@ -105,6 +106,11 @@ class DocmainController extends Controller
                         ->where('dts_docroutes.active', 1)
                         ->where('dts_docroutes.route_accomplished', '=', 4);
                     break;
+                case 5: // mydocs
+                    // Show documents created by the user
+                    $query->where('dts_docroutes.datetime_route_accepted', 0)
+                        ->where('dts_docroutes.active', 1);
+                    break;
                 default:
                     $query->where('dts_docroutes.datetime_route_accepted', 0)
                         ->where('dts_docroutes.active', 1);
@@ -114,23 +120,32 @@ class DocmainController extends Controller
             if ($request->has('toggle')) {
                 // use boolean() to allow 'true'/'false' strings
                 if ($request->boolean('toggle')) {
-                    if($case==3){
-                        $query->where('dts_docroutes.route_fromuser_id', $user->id);
-                    }else{
-                        $query->where('dts_docroutes.route_touser_id', $user->id);
+                    switch ($case) {
+                        case 3: $query->where('dts_docroutes.route_fromuser_id', $user->id);
+                            break;
+                        case 5: $query->where('dts_docroutes.route_fromuser_id', $user->id);
+                            break;
+                        default: $query->where('dts_docroutes.route_touser_id', $user->id);
+                            break;
                     }
                 } else {
-                    if($case==3){
-                        $query->where('dts_docroutes.route_fromsection_id', $user->section_id);
-                    }else{
-                        $query->where('dts_docroutes.route_tosection_id', $user->section_id);
+                    switch ($case) {
+                        case 3: $query->where('dts_docroutes.route_fromsection_id', $user->section_id);
+                            break;
+                        case 5: $query->where('dts_docroutes.route_fromsection_id', $user->section_id);
+                            break;
+                        default: $query->where('dts_docroutes.route_tosection_id', $user->section_id);
+                            break;
                     }
                 }
             } else {
-                if($case==3){
-                    $query->where('dts_docroutes.route_fromsection_id', $user->section_id);
-                }else{
-                    $query->where('dts_docroutes.route_tosection_id', $user->section_id);    
+                switch ($case) {
+                    case 3: $query->where('dts_docroutes.route_fromsection_id', $user->section_id);
+                        break;
+                    case 5: $query->where('dts_docroutes.origin_section', $user->section_id);
+                        break;
+                    default: $query->where('dts_docroutes.route_tosection_id', $user->section_id);
+                        break;
                 }
             }
 
