@@ -31,8 +31,7 @@ Route::prefix('test')->group(function () {
     Route::get('/doctypes', [DoctypesController::class, 'index'])->name('test.doctypes');
     Route::get('/offices', [OfficeController::class, 'index'])->name('test.offices');
     Route::get('/auth/check', [AuthController::class, 'check']);
-
-
+    
     Route::get('/documents-stats', [DocmainController::class, 'stats']);
     Route::get('/alldocs', [DocmainController::class, 'index'])->name('test.alldocs');
     Route::get('/documents', [DocmainController::class, 'index'])->name('test.documents');

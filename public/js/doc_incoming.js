@@ -114,6 +114,35 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+// Add this after document.addEventListener('DOMContentLoaded', ...)
+document.querySelector('#documentsTableBody').addEventListener('click', (e) => {
+    const printBtn = e.target.closest('.print-doc');
+    if (printBtn) {
+        e.preventDefault();
+        const trackingNumber = printBtn.dataset.tracking;
+        if (trackingNumber) {
+            printDocument(trackingNumber);
+        }
+    }
+});
+
+function printDocument(trackingNumber) {
+    // Open print.blade.php in a new window
+    const printWindow = window.open(`/print/${trackingNumber}/doc`, '_blank', 'width=800,height=600');
+    
+    // Add event listener to monitor when the window finishes loading
+    printWindow.onload = function() {
+        // Give some time for the content to fully render
+        setTimeout(() => {
+            printWindow.print();
+            // Close the window after printing (optional)
+            printWindow.onafterprint = function() {
+                printWindow.close();
+            };
+        }, 1000);
+    };
+}
+
 function updateSortIndicators(sortBy, sortOrder) {
     // Remove all sort indicators
     document.querySelectorAll('th.sortable i').forEach(icon => {

@@ -2,17 +2,25 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\VerifySanctumToken;
+use Illuminate\Support\Facades\Auth;
 
 Route::view('/search', 'search')->name('search');
 Route::view('/login', 'auth.login')->name('login');
 Route::view('/register', 'auth.register')->name('register');
 Route::get('/offline', function () { return view('offline');})->name('offline');
+Route::get('/', function () {
+    if (Auth::check()) {
+        return redirect()->route('incoming');
+    }
+    return redirect()->route('login');
+})->name('home');
     
 Route::middleware(VerifySanctumToken::class)->group(function () {
     Route::view('/', 'incoming')->name('incoming');
     Route::get('/add', function () {return view('add');})->name('add');
     Route::get('/find', function () {return view('find');})->name('find');
     Route::get('/profile', function () {return view('profile');})->name('profile');
+    Route::get('/print/{track}/doc', function ($track) { return view('print', ['track' => $track]); })->name('print');
 
     //document views
     Route::get('/mydocs', fn() => view('mydocs', ['type' => 'mydocs']))->name('mydocs');

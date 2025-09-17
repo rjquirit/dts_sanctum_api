@@ -11,7 +11,7 @@ class SectionController extends Controller
 {
     public function index(): JsonResponse
     {
-        $sections = Sections::all();
+        $sections = Sections::where('section_id','<', 39)->get();
         return response()->json([
             'data' => $sections,
             'message' => 'Sections retrieved successfully'
