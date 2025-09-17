@@ -2,7 +2,7 @@ import * as API from './api.js';
 import { showLoading, hideLoading, showError, isOnline } from './utils.js';
 
 // Cache key for offline data
-const DOCS_CACHE_KEY = 'cached_docs';
+const DOCS_CACHE_KEY = 'cached_docs_mydocs';
 
 /**
  * Renders Docss into the table

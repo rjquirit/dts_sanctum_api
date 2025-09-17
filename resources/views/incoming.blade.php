@@ -86,10 +86,7 @@
         <div class="col-12">
             <h5>Incoming Documents</h5>
             <hr>
-            <!-- <input type="text" id="trackingNumber" placeholder="Enter tracking number (e.g., 19-30007)" value="19-30007">
-            <button class="btn" onclick="printReport()">Print Report</button>
-            <button class="btn btn-secondary" onclick="previewReport()">Preview Report</button> -->
-            <!-- Toggle Switch for Document Type -->
+
             <div class="row mb-3">
                 <div class="col-md-3">
                     <div class="form-check form-switch">
@@ -280,41 +277,6 @@
 
 @push('scripts')
 <script type="module" src="{{ asset('js/doc_incoming.js') }}"></script>
-
-    <script>
-        function printReport() {
-            const trackingNumber = document.getElementById('trackingNumber').value.trim();
-            
-            if (!trackingNumber) {
-                alert('Please enter a tracking number');
-                return;
-            }
-
-            // Open print.php with the tracking number as parameter
-            const printUrl = `print.php?track=${encodeURIComponent(trackingNumber)}`;
-            window.open(printUrl, '_blank');
-        }
-
-        function previewReport() {
-            const trackingNumber = document.getElementById('trackingNumber').value.trim();
-            
-            if (!trackingNumber) {
-                alert('Please enter a tracking number');
-                return;
-            }
-
-            // Open print.php with preview parameter
-            const previewUrl = `print.php?track=${encodeURIComponent(trackingNumber)}&preview=1`;
-            window.open(previewUrl, '_blank');
-        }
-
-        // Allow Enter key to trigger print
-        document.getElementById('trackingNumber').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                printReport();
-            }
-        });
-    </script>
 @endpush
 
 @endsection

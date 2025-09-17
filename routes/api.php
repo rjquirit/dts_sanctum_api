@@ -52,6 +52,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Route::get('/documents/deferred', [DocmainController::class, 'index'])->defaults('type', 'deferred')->name('documents.deferred');
     
     Route::post('documents/routes/{actionId}/accept', [DocmainController::class, 'acceptRoute']);
+    Route::post('documents/routes/{actionId}/defer', [DocmainController::class, 'deferredRoute'])->name('documents.defer');
     Route::post('documents/routes/{actionId}/forward', [DocmainController::class, 'forwardRoute']);
     Route::post('documents/{id}/deactivate', [DocmainController::class, 'deactivate']);
     Route::post('documents/{id}/activate', [DocmainController::class, 'activate']);

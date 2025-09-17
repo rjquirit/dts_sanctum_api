@@ -63,9 +63,22 @@ self.addEventListener('activate', event => {
 // Fetch event handler with fallback
 self.addEventListener('fetch', event => {
     // Don't cache browser-sync requests during development
+    const url = new URL(event.request.url);
     if (event.request.url.includes('browser-sync')) {
         return;
     }
+
+    if (url.pathname.startsWith('/api/')) {
+        event.respondWith(
+          fetch(event.request).then(resp => {
+            // Optionally update cache for offline fallback
+            const clone = resp.clone();
+            caches.open('api-cache').then(c => c.put(event.request, clone));
+            return resp;
+          }).catch(() => caches.match(event.request))
+        );
+        return;
+      }
 
     event.respondWith(
         caches.match(event.request)

@@ -192,6 +192,10 @@ class DocmainController extends Controller
                 'success' => true,
                 'message' => 'Documents retrieved successfully',
                 'data' => $documents
+            ])->withHeaders([
+                'Cache-Control' => 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0',
+                'Pragma' => 'no-cache',
+                'Expires' => '0'
             ]);
 
         } catch (\Exception $e) {
@@ -541,49 +545,62 @@ class DocmainController extends Controller
     /**
      * Mark document as done.
      */
-    public function markDone(Request $request, $id): JsonResponse
-    {
-        try {
-            $document = Docmain::findOrFail($id);
-
+    public function markDone($request, $documentId = null): JsonResponse
+{
+    try {
+        // Handle both Request object and direct string parameter
+        if ($request instanceof Request) {
+            // Called via API endpoint
             $validatedData = $request->validate([
                 'actions_taken' => 'required|string'
             ]);
-
-            $document->update([
-                'done' => 1,
-                'final_actions_made' => $validatedData['actions_taken'],
-                'datetime_updated' => now(),
-                'updatedby_id' => auth()->id()
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Document marked as done successfully',
-                'data' => $document
-            ]);
-
-        } catch (ModelNotFoundException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Document not found'
-            ], 404);
-
-        } catch (ValidationException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed',
-                'errors' => $e->errors()
-            ], 422);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error marking document as done',
-                'error' => $e->getMessage()
-            ], 500);
+            $actions = $validatedData['actions_taken'];
+            $docId = $documentId ?? $request->route('id');
+        } else {
+            // Called internally with string parameter
+            $actions = $request;
+            $docId = $documentId;
         }
+
+        if (!$docId) {
+            throw new \InvalidArgumentException('Document ID is required');
+        }
+
+        $document = Docmain::findOrFail($docId);
+
+        $document->update([
+            'done' => 1,
+            'final_actions_made' => $actions,
+            'datetime_updated' => now(),
+            'updatedby_id' => auth()->id()
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Document marked as done successfully',
+            'data' => $document
+        ]);
+
+    } catch (ModelNotFoundException $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Document not found'
+        ], 404);
+    } catch (\Exception $e) {
+        Log::error('Error marking document as done', [
+            'document_id' => $docId ?? null,
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+            'user_id' => auth()->id()
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Error marking document as done',
+            'error' => $e->getMessage()
+        ], 500);
     }
+}
 
 
     /**
@@ -707,7 +724,7 @@ public function keepRoute(Request $request): JsonResponse
     try {
         // ✅ Validate request
         $validated = $request->validate([
-            'actionid'      => 'required|integer|exists:dts_docroutes,id',
+            'actionid'      => 'required|integer|exists:dts_docroutes,action_id',
             'actions_taken' => 'required|string|max:1000',
         ]);
 
@@ -741,7 +758,7 @@ public function keepRoute(Request $request): JsonResponse
 
         // ✅ Call markDone using document_id
         if (method_exists($this, 'markDone')) {
-            $this->markDone($route->actions_taken,$route->document_id);
+            $this->markDone($validated['actions_taken'], $route->document_id);
         }
 
         return response()->json([
@@ -773,14 +790,23 @@ public function keepRoute(Request $request): JsonResponse
 public function deferredRoute(Request $request): JsonResponse
 {
     try {
+        Log::info('Deferred route request received', [
+            'request' => $request->all(),
+            'user_id' => auth()->id()
+        ]);
+
         // ✅ Validate request
         $validated = $request->validate([
-            'actionid'      => 'required|integer|exists:dts_docroutes,id',
+            'actionid'      => 'required|integer|exists:dts_docroutes,action_id',
             'actions_taken' => 'required|string|max:1000',
         ]);
+        Log::info('Validation passed for deferred route', $validated);
 
         $user = auth()->user();
         if (!$user) {
+            Log::warning('Deferred route attempt without authentication', [
+                'actionid' => $request->actionid
+            ]);
             return response()->json([
                 'success' => false,
                 'message' => 'Authentication required'
@@ -788,9 +814,20 @@ public function deferredRoute(Request $request): JsonResponse
         }
 
         $route = Docroutes::findOrFail($validated['actionid']);
+        Log::info('Deferred route found', [
+            'actionid' => $route->action_id,
+            'doc_id'   => $route->document_id,
+            'user_id'  => $user->id
+        ]);
 
         // ✅ Authorization check (section only)
         if ($route->route_tosection_id != $user->section_id) {
+            Log::warning('Unauthorized defer attempt', [
+                'actionid' => $route->action_id,
+                'user_id'  => $user->id,
+                'user_section' => $user->section_id,
+                'route_section'=> $route->route_tosection_id
+            ]);
             return response()->json([
                 'success' => false,
                 'message' => 'You are not authorized to defer this document'
@@ -809,10 +846,19 @@ public function deferredRoute(Request $request): JsonResponse
             'route_accomplished'=> 4,
             'doc_copy'          => 1,
         ]);
+        Log::info('Deferred route updated successfully', [
+            'actionid' => $route->action_id,
+            'doc_id'   => $route->document_id,
+            'user_id'  => $user->id
+        ]);
 
         // ✅ Call markDone using document_id
         if (method_exists($this, 'markDone')) {
-            $this->markDone($route->actions_taken,$route->document_id);
+            $this->markDone($validated['actions_taken'], $route->document_id);
+            Log::info('markDone executed after defer', [
+                'actionid' => $route->action_id,
+                'doc_id'   => $route->document_id
+            ]);
         }
 
         return response()->json([
@@ -822,15 +868,20 @@ public function deferredRoute(Request $request): JsonResponse
         ]);
 
     } catch (ModelNotFoundException $e) {
+        Log::warning('Deferred route not found', [
+            'actionid' => $request->actionid,
+            'user_id'  => auth()->id()
+        ]);
         return response()->json([
             'success' => false,
             'message' => 'Document route not found'
         ], 404);
     } catch (\Exception $e) {
         Log::error('Error deferring document route', [
-            'action_id' => $request->actionid,
-            'error'     => $e->getMessage(),
-            'user_id'   => auth()->id()
+            'actionid' => $request->actionid,
+            'error'    => $e->getMessage(),
+            'trace'    => $e->getTraceAsString(),
+            'user_id'  => auth()->id()
         ]);
 
         return response()->json([
@@ -841,12 +892,13 @@ public function deferredRoute(Request $request): JsonResponse
     }
 }
 
+
 public function releaseRoute(Request $request): JsonResponse
 {
     try {
         // ✅ Validate request
         $validated = $request->validate([
-            'actionid'     => 'required|integer|exists:dts_docroutes,id',
+            'actionid'     => 'required|integer|exists:dts_docroutes,action_id',
             'actions_taken'=> 'required|string|max:1000',
             'release_to'   => 'required|string|max:255',
             'logbook_page' => 'required|string|max:255',
@@ -888,7 +940,7 @@ public function releaseRoute(Request $request): JsonResponse
 
         // ✅ Call markDone with end_remarks and actionid
         if (method_exists($this, 'markDone')) {
-            $this->markDone($$route->end_remarks, $route->document_id);
+            $this->markDone($validated['actions_taken'], $route->document_id);
         }
 
         return response()->json([
@@ -932,7 +984,7 @@ public function forwardRoute(Request $request): JsonResponse
 
         // ✅ Validate request
         $validated = $request->validate([
-            'actionid'          => 'required|integer|exists:dts_docroutes,id',
+            'actionid'          => 'required|integer|exists:dts_docroutes,action_id',
             'route_tosection_id'=> 'required|integer',
             'route_touser_id'   => 'required|integer',
             'route_purpose'     => 'required|string|max:500',

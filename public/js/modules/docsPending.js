@@ -2,7 +2,7 @@ import * as API from './api.js';
 import { showLoading, hideLoading, showError, isOnline } from './utils.js';
 
 // Cache key for offline data
-const DOCS_CACHE_KEY = 'cached_docs';
+const DOCS_CACHE_KEY = 'cached_docs_pending';
 
 /**
  * Renders Docss into the table
@@ -600,4 +600,84 @@ function addDocumentClickHandlers() {
             showDocumentModal(trackingNumber);
         });
     });
+
+    // Add defer button handler
+    document.querySelectorAll('.btn-warning.forward').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const tr = e.target.closest('tr');
+            const actionId = tr.querySelector('.doc-id').value;
+            const tracking = tr.querySelector('[data-label="Tracking"] a').textContent;
+            const docType = tr.querySelector('[data-label="Description"] b').textContent;
+            const description = tr.querySelector('[data-label="Description"]').childNodes[2].textContent.trim();
+
+            // Populate modal with document info
+            document.getElementById('deferActionId').value = actionId;
+            document.getElementById('deferTrackingNo').textContent = tracking;
+            document.getElementById('deferDocType').textContent = docType;
+            document.getElementById('deferDescription').textContent = description;
+
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('deferDocumentModal'));
+            modal.show();
+        });
+    });
+}
+
+// Add this function after other export functions
+export async function deferDocument(actionId, remarks) {
+    if (!isOnline()) {
+        throw new Error('Cannot defer document while offline');
+    }
+
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+        throw new Error('Authentication required');
+    }
+
+    try {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+        if (!csrfToken) {
+            throw new Error('CSRF token not found');
+        }
+
+        // Log the request details for debugging
+        console.log('Sending defer request:', {
+            url: `/api/documents/routes/${actionId}/defer`,
+            actionId,
+            remarks
+        });
+
+        const response = await fetch(`/api/documents/routes/${actionId}/defer`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest',
+                'Authorization': `Bearer ${token}`
+            },
+            credentials: 'include', // Include cookies
+            body: JSON.stringify({
+                actionid: parseInt(actionId), // Ensure integer
+                actions_taken: remarks || null // Ensure null if empty
+            })
+        });
+
+        // Log the raw response for debugging
+        console.log('Raw response:', response);
+
+        const responseData = await response.json();
+        console.log('Response data:', responseData);
+
+        if (!response.ok) {
+            throw new Error(responseData.message || responseData.error || 'Failed to defer document');
+        }
+
+        return responseData;
+
+    } catch (error) {
+        console.error('Error in deferDocument:', error);
+        throw new Error(`Error deferring document: ${error.message}`);
+    }
 }

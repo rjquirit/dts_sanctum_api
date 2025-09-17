@@ -234,6 +234,50 @@
     </div>
 </div>
 
+<!-- Defer Document Modal -->
+<div class="modal fade" id="deferDocumentModal" tabindex="-1" aria-labelledby="deferDocumentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deferDocumentModalLabel">Defer Document</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Document Info Section -->
+                <div class="document-info mb-3">
+                    <h6>Document Details</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Tracking #:</strong> <span id="deferTrackingNo"></span></p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Type:</strong> <span id="deferDocType"></span></p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <p><strong>Description:</strong> <span id="deferDescription"></span></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Defer Reason Form -->
+                <form id="deferDocumentForm">
+                    <input type="hidden" id="deferActionId" name="actionId">
+                    <div class="mb-3">
+                        <label for="deferReason" class="form-label">Reason for Deferring</label>
+                        <textarea class="form-control" id="deferReason" name="deferReason" rows="4" required></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" id="confirmDeferBtn">Confirm Defer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @push('scripts')
 <script type="module" src="{{ asset('js/doc_pending.js') }}"></script>
 @endpush

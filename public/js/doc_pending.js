@@ -1,4 +1,4 @@
-import { loadDocs } from './modules/docsPending.js';
+import { loadDocs, deferDocument } from './modules/docsPending.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM loaded, initializing...');
@@ -154,3 +154,49 @@ function printDocument(trackingNumber) {
         }, 1000);
     };
 }
+
+// Add after the DOMContentLoaded event listener
+
+// Replace the existing confirmDeferBtn event listener with this updated version:
+document.getElementById('confirmDeferBtn')?.addEventListener('click', async function() {
+    try {
+        const actionId = document.getElementById('deferActionId').value;
+        const deferReason = document.getElementById('deferReason').value;
+
+        if (!deferReason.trim()) {
+            alert('Please provide a reason for deferring the document.');
+            return;
+        }
+
+        // Show loading state
+        this.disabled = true;
+        this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
+
+        // Call the deferDocument function
+        const result = await deferDocument(actionId, deferReason);
+
+        // Close modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('deferDocumentModal'));
+        modal.hide();
+
+        // Show success message
+        alert('Document has been deferred successfully');
+
+        // Clear any cached data
+        localStorage.removeItem('cached_docs');
+
+        // Force a complete page reload from server
+        window.location.reload(true);
+
+    } catch (error) {
+        console.error('Error deferring document:', error);
+        alert(error.message);
+    } finally {
+        // Reset button state
+        this.disabled = false;
+        this.innerHTML = 'Confirm Defer';
+        
+        // Clear form
+        document.getElementById('deferReason').value = '';
+    }
+});
