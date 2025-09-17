@@ -19,12 +19,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Bind logout button
     const logoutBtn = document.getElementById('logoutBtn');
-    if (logoutBtn) {
-    logoutBtn.addEventListener('click', async () => {
-        const confirmLogout = confirm("Are you sure you want to logout?");
-        if (confirmLogout) {
-            await logout();
-        }
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const confirmLogout = confirm("Are you sure you want to logout?");
+      if (confirmLogout) {
+        await logout();
+      }
     });
 }
 
@@ -493,23 +494,27 @@ const PWAUtils = {
 
 // Fix 3: Better event listener organization
 const initializeApp = () => {
-  // Initialize navigation
-  window.appNavigation = new AppNavigation();
+  try {
+    // Initialize navigation
+    window.appNavigation = new AppNavigation();
 
-  // Initialize PWA features
-  PWAUtils.registerServiceWorker();
-  PWAUtils.checkInstallability();
+    // Initialize PWA features
+    PWAUtils.registerServiceWorker();
+    PWAUtils.checkInstallability();
 
-  // Form validation setup
-  setupFormValidation();
-  
-  // Internal links setup
-  setupInternalLinks();
-  
-  // History state handling
-  setupHistoryStateHandling();
-  
-  console.log('App initialized successfully');
+    // Form validation setup
+    setupFormValidation();
+    
+    // Internal links setup
+    setupInternalLinks();
+    
+    // History state handling
+    setupHistoryStateHandling();
+    
+    console.log('App initialized successfully');
+  } catch (error) {
+    console.error('Error initializing app:', error);
+  }
 };
 
 // Fix 4: Break out form validation setup
@@ -556,3 +561,88 @@ const appExports = {
 };
 
 Object.assign(window, appExports);
+
+// Add to public/js/main.js
+const PWAManager = {
+    init() {
+        if ('serviceWorker' in navigator) {
+            // Register service worker immediately
+            navigator.serviceWorker.register('/sw.js')
+                .then(registration => {
+                    console.log('SW registered:', registration.scope);
+                })
+                .catch(error => {
+                    console.error('SW registration failed:', error);
+                });
+
+            // Handle install prompt
+            let deferredPrompt;
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                this.showInstallButton(deferredPrompt);
+            });
+        }
+    },
+
+    showInstallButton(deferredPrompt) {
+        const installButton = document.createElement('button');
+        installButton.className = 'btn btn-primary install-button';
+        installButton.innerHTML = '<i class="fas fa-download"></i> Install App';
+        installButton.addEventListener('click', async () => {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log(`User response: ${outcome}`);
+        });
+
+        // Add to login page header
+        const header = document.querySelector('.auth-logo');
+        if (header) {
+            header.after(installButton);
+        }
+    }
+};
+
+// Initialize PWA
+document.addEventListener('DOMContentLoaded', () => {
+    PWAManager.init();
+});
+
+// Add this before the initializeApp function
+
+const setupInternalLinks = () => {
+  // Handle internal navigation links
+  document.querySelectorAll('a[data-internal]').forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      const href = link.getAttribute('href');
+      if (href) {
+        // Update browser history and handle navigation
+        history.pushState({}, '', href);
+        handleRouteChange();
+      }
+    });
+  });
+};
+
+// Add the handleRouteChange function
+const handleRouteChange = () => {
+  const path = window.location.pathname;
+  // Handle different routes here
+  if (path.includes('/login')) {
+    bindLogin('#loginForm');
+    bindGoogleLogin('#GoogleLoginButton');
+  } else if (path.includes('/register')) {
+    bindRegister('#registerForm');
+  }
+  // Add more route handlers as needed
+};
+
+// Update the initializeApp function to include proper error handling
+
+// Add the missing setupHistoryStateHandling function
+const setupHistoryStateHandling = () => {
+  window.addEventListener('popstate', () => {
+    handleRouteChange();
+  });
+};

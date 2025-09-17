@@ -6,8 +6,8 @@ use App\Http\Middleware\VerifySanctumToken;
 Route::view('/search', 'search')->name('search');
 Route::view('/login', 'auth.login')->name('login');
 Route::view('/register', 'auth.register')->name('register');
-
-
+Route::get('/offline', function () { return view('offline');})->name('offline');
+    
 Route::middleware(VerifySanctumToken::class)->group(function () {
     Route::view('/', 'incoming')->name('incoming');
     Route::get('/add', function () {return view('add');})->name('add');
@@ -30,5 +30,3 @@ Route::post('/logout', function () {
     }
     return response()->json(['message' => 'No authenticated user'], 401);
 });
-
-Route::view('/offline', 'offline');
