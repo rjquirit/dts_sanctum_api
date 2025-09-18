@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Http\JsonResponse;
 
 
 class UserController extends Controller
@@ -156,5 +157,60 @@ class UserController extends Controller
     {
         $user->delete();
         return response()->json(null, 204);
+    }
+
+    public function sectionUsers($sectionId) : JsonResponse
+    {
+        $users = User::where('section_id', $sectionId)->get()->map(function ($user) {
+            try {
+                // Decrypt email
+                // $encryptedEmail = $user->email;
+                // $decryptedEmail = (new User)->decryptData($encryptedEmail, "d3p3d10@ict");
+                
+                // Decrypt name with error handling
+                $name = null;
+                try {
+                    $name = Crypt::decryptString($user->name);
+                } catch (\Exception $e) {
+                    Log::error('Name decryption failed: ' . $e->getMessage());
+                    $name = $user->name; // Fallback to encrypted value
+                }
+                
+                // Decrypt position with error handling
+                // $position = null;
+                // try {
+                //     $position = Crypt::decryptString($user->position);
+                // } catch (\Exception $e) {
+                //     Log::error('Position decryption failed: ' . $e->getMessage());
+                //     $position = $user->position; // Fallback to encrypted value
+                // }
+                
+                return [
+                    'id' => $user->id,
+                    'name' => $name
+                    // 'email' => $decryptedEmail,
+                    // 'position' => $position,
+                    // 'division_code' => $user->division_code,
+                    // 'section_id' => $user->section_id,
+                    // 'created_at' => $user->created_at,
+                    // 'updated_at' => $user->updated_at
+                ];
+            } catch (\Exception $e) {
+                Log::error('User data decryption failed: ' . $e->getMessage());
+                
+                return [
+                    'id' => $user->id,
+                    'name' => $user->name
+                    // 'email' => null,
+                    // 'position' => $user->position,
+                    // 'division_code' => $user->division_code,
+                    // 'section_id' => $user->section_id,
+                    // 'created_at' => $user->created_at,
+                    // 'updated_at' => $user->updated_at
+                ];
+            }
+        });
+        
+        return response()->json($users);
     }
 }

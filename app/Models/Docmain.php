@@ -131,4 +131,8 @@ class Docmain extends Model
     {
         return $this->hasMany(DocRoutes::class, 'action_id', 'doc_id');
     }
+    public function latestRoute()
+    {
+        return $this->hasOne(DocRoutes::class, 'document_id', 'doc_id')->latestOfMany('action_id'); 
+    }
 }

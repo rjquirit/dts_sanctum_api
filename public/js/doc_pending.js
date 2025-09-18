@@ -1,4 +1,4 @@
-import { loadDocs, deferDocument, keepDocument } from './modules/docsPending.js';
+import { loadDocs, deferDocument, keepDocument, releaseDocument, forwardDocument, loadSections, loadSectionUsers } from './modules/docsPending.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM loaded, initializing...');
@@ -169,6 +169,142 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('keepReason').value = '';
         }
     });
+
+    document.querySelector('#documentsTableBody').addEventListener('click', (e) => {
+        const acceptBtn = e.target.closest('.release');
+        if (acceptBtn) {
+            const row = acceptBtn.closest('tr');
+            const actionId = row.querySelector('input[name="action_id"]').value; // Get the hidden action_id
+            showReleaseModal({
+                actionId: actionId, // Use the action_id from hidden input
+                tracking: row.querySelector('td:nth-child(1)').textContent.trim(),
+                description: row.querySelector('td:nth-child(2)').textContent.trim(),
+                from: row.querySelector('td:nth-child(3)').textContent.trim()
+            });
+        }
+    });
+
+    document.getElementById('confirmreleaseBtn')?.addEventListener('click', async function() {
+        try {
+            const actionId = document.getElementById('releaseActionId').value;
+            const releaseReason = document.getElementById('releaseReason').value;
+            const releaseCopy = document.getElementById('releaseCopy').value;
+            const releaseTO = document.getElementById('releaseTO').value;
+            const releaseLogbookinfo = document.getElementById('releaseLogbookinfo').value;
+
+            if (!releaseReason.trim() && !releaseTO.trim() && !releaseLogbookinfo.trim()) {
+                alert('Please provide a reason and other details for release the document.');
+                return;
+            }
+
+            // Show loading state
+            this.disabled = true;
+            this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
+
+            // Call the releaseDocument function
+            const result = await releaseDocument(actionId, releaseReason, releaseCopy, releaseTO, releaseLogbookinfo);
+
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('releaseDocumentModal'));
+            modal.hide();
+
+            // Show success message
+            alert('Document has been released successfully');
+
+            // Clear any cached data
+            localStorage.removeItem('cached_docs_pending');
+
+            // Force a complete page reload from server
+            window.location.reload(true);
+
+        } catch (error) {
+            console.error('Error releasing document:', error);
+            alert(error.message);
+        } finally {
+            // Reset button state
+            this.disabled = false;
+            this.innerHTML = 'Confirm Release';
+            
+            // Clear form
+            document.getElementById('releaseReason').value = '';
+        }
+    });
+
+    document.querySelector('#documentsTableBody').addEventListener('click', (e) => {
+        const acceptBtn = e.target.closest('.forward');
+        if (acceptBtn) {
+            const row = acceptBtn.closest('tr');
+            const actionId = row.querySelector('input[name="action_id"]').value; // Get the hidden action_id
+            showForwardModal({
+                actionId: actionId, // Use the action_id from hidden input
+                tracking: row.querySelector('td:nth-child(1)').textContent.trim(),
+                description: row.querySelector('td:nth-child(2)').textContent.trim(),
+                from: row.querySelector('td:nth-child(3)').textContent.trim()
+            });
+        }
+    });
+
+        // In the confirmforwardBtn click handler:
+    
+    document.getElementById('confirmforwardBtn')?.addEventListener('click', async function() {
+        try {
+            const actionId = document.getElementById('forwardActionId').value;
+            const forwardReason = document.getElementById('forwardReason').value.trim();
+            const forwardCopy = document.getElementById('forwardCopy').value;
+            const receiving_section = document.getElementById('receiving_section').value;
+            const receiving_personnel = document.getElementById('receiving_personnel').value;
+            const forward_purpose = document.getElementById('forward_purpose').value.trim();
+    
+            // Improved validation
+            if (!actionId) {
+                throw new Error('Invalid action ID');
+            }
+            if (!receiving_section) {
+                throw new Error('Please select a receiving section');
+            }
+            if (!receiving_personnel) {
+                throw new Error('Please select a receiving personnel');
+            }
+            if (!forward_purpose) {
+                throw new Error('Please provide a forwarding purpose');
+            }
+    
+            // Show loading state
+            this.disabled = true;
+            this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
+    
+            // Call the forwardDocument function
+            const result = await forwardDocument(
+                actionId, 
+                forwardReason, 
+                forwardCopy || '1', // Default to 1 if empty
+                receiving_section,
+                receiving_personnel,
+                forward_purpose
+            );
+    
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('forwardDocumentModal'));
+            modal.hide();
+    
+            // Show success message
+            alert('Document has been forwarded successfully');
+    
+            // Clear any cached data
+            localStorage.removeItem('cached_docs_pending');
+    
+            // Force a complete page reload from server
+            window.location.reload(true);
+    
+        } catch (error) {
+            console.error('Error forwarding document:', error);
+            alert(error.message || 'Failed to forward document. Please try again.');
+        } finally {
+            // Reset button state
+            this.disabled = false;
+            this.innerHTML = 'Confirm Forward';
+        }
+    });
 });
 
 // Add this after document.addEventListener('DOMContentLoaded', ...)
@@ -298,4 +434,73 @@ function showKeepModal(docInfo) {
     // Show modal
     const modal = new bootstrap.Modal(document.querySelector('#keepDocumentModal'));
     modal.show();
+}
+
+function showReleaseModal(docInfo) {
+    // Populate modal with document info
+    document.querySelector('#releaseActionId').value = docInfo.actionId;
+    document.querySelector('#releaseTrackingNo').textContent = docInfo.tracking;
+    document.querySelector('#releaseDescription').textContent = docInfo.description;
+    document.querySelector('#releaseFrom').textContent = docInfo.from;
+    
+    // Clear previous remarks
+    document.querySelector('#releaseReason').value = '';
+    document.querySelector('#releaseCopy').value = '';
+    document.querySelector('#releaseTO').value = '';
+    document.querySelector('#releaseLogbookinfo').value = '';
+    // Show modal
+    const modal = new bootstrap.Modal(document.querySelector('#releaseDocumentModal'));
+    modal.show();
 } 
+
+
+async function showForwardModal(docInfo) {
+    // Populate modal with document info
+    document.querySelector('#forwardActionId').value = docInfo.actionId;
+    document.querySelector('#forwardTrackingNo').textContent = docInfo.tracking;
+    document.querySelector('#forwardDescription').textContent = docInfo.description;
+    document.querySelector('#forwardFrom').textContent = docInfo.from;
+    
+    // Load sections when modal opens
+    await loadSections();
+    
+    // Clear personnel dropdown when modal opens
+    clearPersonnelDropdown();
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.querySelector('#forwardDocumentModal'));
+    modal.show();
+}
+
+function clearPersonnelDropdown() {
+    const personnelSelect = document.querySelector('#receiving_personnel');
+    personnelSelect.innerHTML = '<option value="">-- Select Personnel --</option>';
+    personnelSelect.disabled = false;
+}
+
+// Event listener for section dropdown change
+document.addEventListener('DOMContentLoaded', function() {
+    const sectionSelect = document.querySelector('#receiving_section');
+    
+    if (sectionSelect) {
+        sectionSelect.addEventListener('change', function() {
+            const selectedSectionId = this.value;
+            loadSectionUsers(selectedSectionId);
+        });
+    }
+});
+
+// Your existing click event listener remains the same
+document.querySelector('#documentsTableBody').addEventListener('click', (e) => {
+    const acceptBtn = e.target.closest('.forward');
+    if (acceptBtn) {
+        const row = acceptBtn.closest('tr');
+        const actionId = row.querySelector('input[name="action_id"]').value;
+        showForwardModal({
+            actionId: actionId,
+            tracking: row.querySelector('td:nth-child(1)').textContent.trim(),
+            description: row.querySelector('td:nth-child(2)').textContent.trim(),
+            from: row.querySelector('td:nth-child(3)').textContent.trim()
+        });
+    }
+});

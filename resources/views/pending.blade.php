@@ -322,6 +322,123 @@
     </div>
 </div>
 
+<!-- Release Document Modal -->
+<div class="modal fade" id="releaseDocumentModal" tabindex="-1" aria-labelledby="releaseDocumentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="releaseDocumentModalLabel">Release Document</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Document Info Section -->
+                <div class="document-info mb-3">
+                    <h6>Document Details</h6>
+                    <div class="row">
+                        <div class="col-4 fw-bold">Tracking #:</div>
+                        <div class="col-8" id="releaseTrackingNo"></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4 fw-bold">Description:</div>
+                        <div class="col-8" id="releaseDescription"></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4 fw-bold">From:</div>
+                        <div class="col-8" id="releaseFrom"></div>
+                    </div>
+                </div>
+
+                <!-- release Reason Form -->
+                <form id="releaseDocumentForm">
+                    <input type="hidden" id="releaseActionId" name="actionId">
+                    <div class="mb-3">
+                        <label for="releaseReason" class="form-label">Actions Taken<br></label>
+                        <textarea class="form-control" id="releaseReason" name="releaseReason" rows="4" required></textarea>
+
+                        <div class="form-check" style="margin-top: 10px;">
+                            <input type="checkbox" class="form-check-input" id="releaseCopy" name="releaseCopy" checked>
+                            <label class="form-check-label" for="releaseCopy">Remain Copies of Document</label>
+                        </div>
+
+                        <label for="releaseTO" class="form-label">Release to</label>
+                        <input type="text" class="form-control" id="releaseTO" name="releaseTO" placeholder="Name, Contact, Office">
+
+                        <label for="releaseLogbookinfo" class="form-label">Reference or Logbook Information</label>
+                        <input type="text" class="form-control" id="releaseLogbookinfo" name="releaseLogbookinfo" placeholder="Reference Number, Logbook Page">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" id="confirmreleaseBtn">Confirm release</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Forward Document Modal -->
+<div class="modal fade" id="forwardDocumentModal" tabindex="-1" aria-labelledby="forwardDocumentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="forwardDocumentModalLabel">Forward Document</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Document Info Section -->
+                <div class="document-info mb-3">
+                    <h6>Document Details</h6>
+                    <div class="row">
+                        <div class="col-4 fw-bold">Tracking #:</div>
+                        <div class="col-8" id="forwardTrackingNo"></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4 fw-bold">Description:</div>
+                        <div class="col-8" id="forwardDescription"></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4 fw-bold">From:</div>
+                        <div class="col-8" id="forwardFrom"></div>
+                    </div>
+                </div>
+
+                <!-- forward Reason Form -->
+                <form id="forwardDocumentForm">
+                    <input type="hidden" id="forwardActionId" name="actionId">
+                    <div class="mb-3">
+                        <label for="forwardReason" class="form-label">Actions Taken<br></label>
+                        <textarea class="form-control" id="forwardReason" name="forwardReason" rows="4" required></textarea>
+
+                        <div class="form-check" style="margin-top: 10px;">
+                            <input type="checkbox" class="form-check-input" id="forwardCopy" name="forwardCopy" checked>
+                            <label class="form-check-label" for="forwardCopy">Remain Copies of Document</label>
+                        </div>
+
+                        <label for="receiving_section" class="form-label">Forward to Unit</label>
+                        <select id="receiving_section" name="receiving_section" class="form-select" required>
+                            <option value="">-- Select Receiving Unit --</option>
+                        </select>
+
+                        <label for="receiving_personnel" class="form-label">Forward to Personnel</label>
+                        <select id="receiving_personnel" name="receiving_personnel" class="form-select" required>
+                            <option value="">-- Select Personnel --</option>
+                        </select>
+
+                        <label for="forward_purpose" class="form-label">Purpose of Forwarding:</label>
+                        <textarea class="form-control" id="forward_purpose" name="forward_purpose" rows="4" 
+                                  placeholder="Purposes or Actions to be taken..." required>
+                        </textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" id="confirmforwardBtn">Confirm Forward</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @push('scripts')
 <script type="module" src="{{ asset('js/doc_pending.js') }}"></script>
 @endpush

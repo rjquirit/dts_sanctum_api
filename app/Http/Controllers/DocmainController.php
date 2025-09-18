@@ -91,7 +91,8 @@ class DocmainController extends Controller
                 case 1: // incoming
                     // Keep the route filters (qualified column names)
                     $query->where('dts_docroutes.datetime_route_accepted', 0)
-                        ->where('dts_docroutes.active', 1);
+                        ->where('dts_docroutes.active', 1)
+                        ->where('dts_docroutes.route_accomplished', '=', 0);
                     break;
                 case 2: // pending
                     $query->where('dts_docroutes.datetime_route_accepted', '<>', 0)
@@ -124,7 +125,8 @@ class DocmainController extends Controller
                     break;
                 default:
                     $query->where('dts_docroutes.datetime_route_accepted', 0)
-                        ->where('dts_docroutes.active', 1);
+                        ->where('dts_docroutes.active', 1)
+                        ->where('dts_docroutes.route_accomplished', '=', 0);
             }
 
             // Toggle: personal vs office
@@ -173,7 +175,19 @@ class DocmainController extends Controller
             // Apply ordering using qualified column
             $query->orderByRaw("$sortColumn $sortOrder");
 
-            // Pagination (select dts_docroutes.* earlier avoids ambiguous column errors)
+            $sql = $query->toSql();
+            $bindings = $query->getBindings();
+            $fullSql = vsprintf(str_replace('?', "'%s'", $sql), $bindings);
+
+            Log::info("DocmainController@index SQL DEBUG", [
+                'sql' => $sql,
+                'bindings' => $bindings,
+                'full_sql' => $fullSql,
+                'user_id' => $user->id,
+                'case' => $case,
+                'type' => $typeInput,
+            ]);
+                        // Pagination (select dts_docroutes.* earlier avoids ambiguous column errors)
             $perPage = (int) $request->get('per_page', 15);
             $documents = $query->paginate($perPage);
 
@@ -320,9 +334,9 @@ class DocmainController extends Controller
                     'route_fromuser_id' => $user->id,
                     'route_from' => $user->name,
                     'route_fromsection_id' => $user->section_id,
-                    'route_fromsection' => $user->section->section_name ?? '',
+                    'route_fromsection' => $user->section->section_description ?? '',
                     'route_tosection_id' => $validatedData['receiving_section'],
-                    'route_tosection' => $toSection->section_name ?? '',
+                    'route_tosection' => $toSection->section_description ?? '',
                     'route_touser_id' => 0,
                     'route_purpose' => $validatedData['actions_needed'],
                     'datetime_forwarded' => now(),
@@ -919,16 +933,16 @@ public function deferredRoute(Request $request): JsonResponse
     }
 }
 
-
 public function releaseRoute(Request $request): JsonResponse
 {
     try {
         // ✅ Validate request
         $validated = $request->validate([
-            'actionid'     => 'required|integer|exists:dts_docroutes,action_id',
-            'actions_taken'=> 'required|string|max:1000',
-            'release_to'   => 'required|string|max:255',
-            'logbook_page' => 'required|string|max:255',
+            'actionid'      => 'required|integer|exists:dts_docroutes,action_id',
+            'actions_taken' => 'required|string|max:1000',
+            'doc_copy'        => 'required|integer|in:0,1',
+            'release_to'    => 'required|string|max:255',
+            'logbook_page'  => 'required|string|max:255',
         ]);
 
         $user = auth()->user();
@@ -943,6 +957,14 @@ public function releaseRoute(Request $request): JsonResponse
 
         // ✅ Authorization check (section only)
         if ($route->route_tosection_id != $user->section_id) {
+            Log::warning('Unauthorized release attempt', [
+                'action_id'   => $validated['actionid'],
+                'document_id' => $route->document_id,
+                'user_id'     => $user->id,
+                'user_name'   => $user->name,
+                'section_id'  => $user->section_id,
+            ]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'You are not authorized to release this document'
@@ -954,21 +976,33 @@ public function releaseRoute(Request $request): JsonResponse
 
         // ✅ Update for releasing document
         $route->update([
-            'action_datetime'   => now(),
-            'actions_taken'     => $validated['actions_taken'],
-            'actionby_id'       => $user->id,
-            'acted_by'          => $user->name,
-            'doc_copy'          => 1,
-            'out_released_to'   => $validated['release_to'],
-            'logbook_page'      => $validated['logbook_page'],
-            'route_accomplished'=> 3,
-            'end_remarks'       => $endRemarks,
+            'action_datetime'    => now(),
+            'actions_taken'      => $validated['actions_taken'],
+            'actionby_id'        => $user->id,
+            'acted_by'           => $user->name,
+            'doc_copy'           => $validated['doc_copy'],
+            'out_released_to'    => $validated['release_to'],
+            'logbook_page'       => $validated['logbook_page'],
+            'route_accomplished' => 3,
+            'end_remarks'        => $endRemarks,
         ]);
 
-        // ✅ Call markDone with end_remarks and actionid
+        // ✅ Call markDone with remarks and document_id
         if (method_exists($this, 'markDone')) {
-            $this->markDone($validated['actions_taken'], $route->document_id);
+            $this->markDone($endRemarks, $route->document_id);
         }
+
+        // ✅ Log success
+        Log::info('Document released successfully', [
+            'action_id'     => $validated['actionid'],
+            'document_id'   => $route->document_id,
+            'actions_taken' => $validated['actions_taken'],
+            'release_to'    => $validated['release_to'],
+            'logbook_page'  => $validated['logbook_page'],
+            'user_id'       => $user->id,
+            'user_name'     => $user->name,
+            'section_id'    => $user->section_id,
+        ]);
 
         return response()->json([
             'success' => true,
@@ -977,6 +1011,11 @@ public function releaseRoute(Request $request): JsonResponse
         ]);
 
     } catch (ModelNotFoundException $e) {
+        Log::warning('ReleaseRoute attempted on missing route', [
+            'action_id' => $request->actionid,
+            'user_id'   => auth()->id()
+        ]);
+
         return response()->json([
             'success' => false,
             'message' => 'Document route not found'
@@ -995,9 +1034,11 @@ public function releaseRoute(Request $request): JsonResponse
         ], 500);
     }
 }
+
 /**
  * Forward a document to another section/user
  */
+
 public function forwardRoute(Request $request): JsonResponse
 {
     try {
@@ -1012,10 +1053,10 @@ public function forwardRoute(Request $request): JsonResponse
         // ✅ Validate request
         $validated = $request->validate([
             'actionid'          => 'required|integer|exists:dts_docroutes,action_id',
+            'actions_taken'     => 'required|string|max:1000',
+            'doc_copy'        => 'required|integer|in:0,1',
             'route_tosection_id'=> 'required|integer',
             'route_touser_id'   => 'required|integer',
-            'route_purpose'     => 'required|string|max:500',
-            'actions_taken'     => 'required|string|max:1000',
             'fwd_remarks'       => 'nullable|string|max:1000',
         ]);
 
@@ -1023,6 +1064,14 @@ public function forwardRoute(Request $request): JsonResponse
 
         // ✅ Authorization check (only section)
         if ($currentRoute->route_tosection_id != $user->section_id) {
+            Log::warning('Unauthorized forward attempt', [
+                'action_id'   => $validated['actionid'],
+                'document_id' => $currentRoute->document_id,
+                'user_id'     => $user->id,
+                'user_name'   => $user->name,
+                'section_id'  => $user->section_id,
+            ]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'You are not authorized to forward this document'
@@ -1034,37 +1083,60 @@ public function forwardRoute(Request $request): JsonResponse
         try {
             // ✅ Update current route
             $currentRoute->update([
-                'actions_datetime'  => now(),
-                'actions_taken'     => $validated['actions_taken'],
-                'actionby_id'       => $user->id,
-                'acted_by'          => $user->name,
-                'route_accomplished'=> 1,
-                'end_remarks'       => $validated['actions_taken'],
+                'actions_datetime'   => now(),
+                'actions_taken'      => $validated['actions_taken'],
+                'actionby_id'        => $user->id,
+                'acted_by'           => $user->name,
+                'route_accomplished' => 1,
+                'doc_copy'           => $validated['doc_copy'],
+                'fwd_remarks'        => $validated['fwd_remarks'],
+            ]);
+
+            Log::info('Docroutes updated', [
+                'actions_taken'      => $validated['actions_taken'],
+                'actionby_id'        => $user->id,
+                'acted_by'           => $user->name,
+                'route_accomplished' => 1,
+                'doc_copy'           => $validated['doc_copy'],
+                'fwd_remarks'        => $validated['fwd_remarks'],
             ]);
 
             // ✅ Create new route
-            $toSection = Sections::find($validated['route_tosection_id']); // assuming you have Sections model
-
+            $toSection = Sections::where('section_id', $validated['route_tosection_id'])->first();
             $newRouteData = [
-                'document_id'         => $currentRoute->document_id,
-                'previous_route_id'   => $validated['actionid'],
-                'route_fromuser_id'   => $user->id,
-                'route_from'          => $user->name,
-                'route_fromsection_id'=> $user->section_id,
-                'route_fromsection'   => $user->section->section_name ?? '',
-                'route_tosection_id'  => $validated['route_tosection_id'],
-                'route_tosection'     => $toSection->section_name ?? '',
-                'route_touser_id'     => $validated['route_touser_id'],
-                'route_purpose'       => $validated['route_purpose'],
-                'fwd_remarks'         => $validated['fwd_remarks'] ?? '',
-                'datetime_forwarded'  => now(),
+                'document_id'          => $currentRoute->document_id,
+                'previous_route_id'    => $validated['actionid'],
+                'route_fromuser_id'    => $user->id,
+                'route_from'           => $user->name, // 👈 Always set from user
+                'route_fromsection_id' => $user->section_id,
+                'route_fromsection'    => $user->section->section_description ?? '(No Section)',
+                'route_tosection_id'   => $validated['route_tosection_id'],
+                'route_tosection'      => $toSection->section_description ?? '(Unknown Section)',
+                'route_touser_id'      => $validated['route_touser_id'],
+                'route_purpose'        => $validated['actions_taken'],
+                'fwd_remarks'          => $validated['fwd_remarks'] ?? '',
+                'datetime_forwarded'   => now(),
                 'datetime_route_accepted' => null,
-                'active'              => 1,
+                'active'               => 1,
             ];
 
             $newRoute = Docroutes::create($newRouteData);
 
             DB::commit();
+
+            // ✅ Log success
+            Log::info('Document forwarded successfully', [
+                'action_id'        => $validated['actionid'],
+                'document_id'      => $currentRoute->document_id,
+                'actions_taken'    => $validated['actions_taken'],
+                'route_from_user'  => $user->name, // 👈 explicit user
+                'route_from_section'=> $user->section->section_name ?? '(No Section)',
+                'route_to_section' => $toSection->section_description ?? '(Unknown Section)',
+                'route_purpose'    => $validated['actions_taken'],
+                'fwd_remarks'      => $validated['fwd_remarks'] ?? '',
+                'user_id'          => $user->id,
+                'user_name'        => $user->name,
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -1074,15 +1146,33 @@ public function forwardRoute(Request $request): JsonResponse
 
         } catch (\Exception $e) {
             DB::rollBack();
+
+            Log::error('DB transaction failed during forwardRoute', [
+                'action_id'   => $validated['actionid'],
+                'document_id' => $currentRoute->document_id ?? null,
+                'error'       => $e->getMessage(),
+                'user_id'     => $user->id,
+            ]);
+
             throw $e;
         }
 
     } catch (ModelNotFoundException $e) {
+        Log::warning('ForwardRoute attempted on missing route', [
+            'action_id' => $request->actionid,
+            'user_id'   => auth()->id()
+        ]);
+
         return response()->json([
             'success' => false,
             'message' => 'Document route not found'
         ], 404);
     } catch (ValidationException $e) {
+        Log::warning('ForwardRoute validation failed', [
+            'errors'  => $e->errors(),
+            'user_id' => auth()->id()
+        ]);
+
         return response()->json([
             'success' => false,
             'message' => 'Validation failed',
@@ -1102,4 +1192,5 @@ public function forwardRoute(Request $request): JsonResponse
         ], 500);
     }
 }
+
 }

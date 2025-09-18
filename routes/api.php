@@ -14,6 +14,7 @@ use App\Http\Controllers\DocroutesController;
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\GoogleController;
+use App\Models\User;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -26,6 +27,7 @@ Route::get('/docroutes/{doc_id}', [DocroutesController::class, 'routesForDoc']);
 
 Route::prefix('test')->group(function () {
     Route::get('/sectionname/{section_id}', [SectionController::class, 'getsections'])->name('test.section');
+    Route::get('/sectionusers/{section_id}/list', [UserController::class, 'sectionUsers'])->name('section.users');
     Route::get('/users', [UserController::class, 'index'])->name('test.users');
     Route::get('/sections', [SectionController::class, 'index'])->name('test.section');
     Route::get('/doctypes', [DoctypesController::class, 'index'])->name('test.doctypes');
@@ -53,7 +55,8 @@ Route::middleware('auth:sanctum')->group(function () {
     
     Route::post('documents/routes/{actionId}/accept', [DocmainController::class, 'acceptRoute']);
     Route::post('documents/routes/{actionId}/keep', [DocmainController::class, 'keepRoute']);
-    Route::post('documents/routes/{actionId}/defer', [DocmainController::class, 'deferredRoute'])->name('documents.defer');
+    Route::post('documents/routes/{actionId}/release', [DocmainController::class, 'releaseRoute']);
+    Route::post('documents/routes/{actionId}/defer', [DocmainController::class, 'deferredRoute']);
     Route::post('documents/routes/{actionId}/forward', [DocmainController::class, 'forwardRoute']);
     Route::post('documents/{id}/deactivate', [DocmainController::class, 'deactivate']);
     Route::post('documents/{id}/activate', [DocmainController::class, 'activate']);
