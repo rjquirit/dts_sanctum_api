@@ -1,4 +1,4 @@
-import { loadDocs, acceptDocument } from './modules/docsIncoming.js';
+import { loadDocs } from './modules/docsKeep.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM loaded, initializing...');
@@ -54,94 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initial sort indicators
     updateSortIndicatorsFromUrl();
-
-    // Add click handler for accept buttons
-    document.querySelector('#documentsTableBody').addEventListener('click', (e) => {
-        const acceptBtn = e.target.closest('.accept');
-        if (acceptBtn) {
-            const row = acceptBtn.closest('tr');
-            const actionId = row.querySelector('input[name="action_id"]').value; // Get the hidden action_id
-            showAcceptModal({
-                actionId: actionId, // Use the action_id from hidden input
-                tracking: row.querySelector('td:nth-child(1)').textContent.trim(),
-                description: row.querySelector('td:nth-child(2)').textContent.trim(),
-                from: row.querySelector('td:nth-child(3)').textContent.trim()
-            });
-        }
-    });
-
-    // Replace the existing accept confirmation handler
-    document.querySelector('#confirmAcceptBtn').addEventListener('click', async () => {
-        const form = document.querySelector('#acceptDocumentForm');
-        const actionId = form.querySelector('#acceptActionId').value;
-        const remarks = form.querySelector('#accepting_remarks').value;
-        
-        try {
-            // Show loading state
-            const confirmBtn = document.querySelector('#confirmAcceptBtn');
-            confirmBtn.disabled = true;
-            confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
-            
-            await acceptDocument(actionId, remarks);
-            
-            // Hide modal
-            bootstrap.Modal.getInstance(document.querySelector('#acceptDocumentModal')).hide();
-            
-            // Store success message in sessionStorage
-            sessionStorage.setItem('documentAcceptedMessage', 'Document accepted successfully!');
-            
-            // Redirect to incoming page
-            alert('Accept document successfully!');
-            window.location.href = '/incoming';
-            
-        } catch (error) {
-            console.error('Error accepting document:', error);
-            alert('Failed to accept document. Please try again.');
-            
-            // Reset button state
-            confirmBtn.disabled = false;
-            confirmBtn.innerHTML = 'Accept Document';
-        }
-    });
-
-    // Add this code to handle showing the success message after page reload
-    const message = sessionStorage.getItem('documentAcceptedMessage');
-    if (message) {
-        // Clear the message from storage
-        sessionStorage.removeItem('documentAcceptedMessage');
-        // Show the success message
-        showSuccess(message);
-    }
 });
-
-// Add this after document.addEventListener('DOMContentLoaded', ...)
-document.querySelector('#documentsTableBody').addEventListener('click', (e) => {
-    const printBtn = e.target.closest('.print-doc');
-    if (printBtn) {
-        e.preventDefault();
-        const trackingNumber = printBtn.dataset.tracking;
-        if (trackingNumber) {
-            printDocument(trackingNumber);
-        }
-    }
-});
-
-function printDocument(trackingNumber) {
-    // Open print.blade.php in a new window
-    const printWindow = window.open(`/print/${trackingNumber}/doc`, '_blank', 'width=800,height=600');
-    
-    // Add event listener to monitor when the window finishes loading
-    printWindow.onload = function() {
-        // Give some time for the content to fully render
-        setTimeout(() => {
-            printWindow.print();
-            // Close the window after printing (optional)
-            printWindow.onafterprint = function() {
-                printWindow.close();
-            };
-        }, 1000);
-    };
-}
 
 function updateSortIndicators(sortBy, sortOrder) {
     // Remove all sort indicators
@@ -191,7 +104,7 @@ function loadFilteredDocs() {
     
     // Build query parameters - ADD TYPE HERE
     const params = new URLSearchParams();
-    params.append('type', 'incoming'); // <-- ADD THIS LINE
+    params.append('type', 'keep'); // <-- ADD THIS LINE
     if (searchTerm) params.append('search', searchTerm);
     if (docTypeId) params.append('doc_type_id', docTypeId);
     params.append('toggle', showPersonal);
@@ -213,18 +126,31 @@ function debounce(func, wait) {
         timeout = setTimeout(() => func.apply(context, args), wait);
     };
 }
+// Add this after document.addEventListener('DOMContentLoaded', ...)
+document.querySelector('#documentsTableBody').addEventListener('click', (e) => {
+    const printBtn = e.target.closest('.print-doc');
+    if (printBtn) {
+        e.preventDefault();
+        const trackingNumber = printBtn.dataset.tracking;
+        if (trackingNumber) {
+            printDocument(trackingNumber);
+        }
+    }
+});
 
-function showAcceptModal(docInfo) {
-    // Populate modal with document info
-    document.querySelector('#acceptActionId').value = docInfo.actionId;
-    document.querySelector('#acceptDocTracking').textContent = docInfo.tracking;
-    document.querySelector('#acceptDocDescription').textContent = docInfo.description;
-    document.querySelector('#acceptDocFrom').textContent = docInfo.from;
+function printDocument(trackingNumber) {
+    // Open print.blade.php in a new window
+    const printWindow = window.open(`/print/${trackingNumber}/doc`, '_blank', 'width=800,height=600');
     
-    // Clear previous remarks
-    document.querySelector('#accepting_remarks').value = '';
-    
-    // Show modal
-    const modal = new bootstrap.Modal(document.querySelector('#acceptDocumentModal'));
-    modal.show();
+    // Add event listener to monitor when the window finishes loading
+    printWindow.onload = function() {
+        // Give some time for the content to fully render
+        setTimeout(() => {
+            printWindow.print();
+            // Close the window after printing (optional)
+            printWindow.onafterprint = function() {
+                printWindow.close();
+            };
+        }, 1000);
+    };
 }

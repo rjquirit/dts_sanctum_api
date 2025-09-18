@@ -2,7 +2,7 @@ import * as API from './api.js';
 import { showLoading, hideLoading, showError, isOnline } from './utils.js';
 
 // Cache key for offline data
-const DOCS_CACHE_KEY = 'cached_docs_pending';
+const DOCS_CACHE_KEY = 'cached_docs_keep';
 
 /**
  * Renders Docss into the table
@@ -54,15 +54,6 @@ function renderDocs(docs, tableBodySelector) {
             <input type="hidden" class="doc-id" name="action_id" value="${escapeHtml(doc.action_id)}">
                 <button class="btn btn-sm btn-info print-doc" data-tracking="${escapeHtml(doc.doc_tracking)}" aria-label="Print Trail">
                     <i class="fas fa-print"></i>
-                </button>               
-                <button class="btn btn-sm btn-primary forward" aria-label="Forward document">
-                    <i class="fas fa-share"></i>
-                </button>
-                <button class="btn btn-sm btn-secondary keep" aria-label="Keep document">
-                    <i class="fas fa-save"></i>
-                </button>
-                <button class="btn btn-sm btn-warning defer" aria-label="Deferred document">
-                    <i class="fas fa-clock"></i>
                 </button>
             </td>
         `;
@@ -100,7 +91,7 @@ function escapeHtml(unsafe) {
 /**
  * Load Docs from API or cache if offline
  */
-export async function loadDocs(tableBodySelector, url = '/api/documents/pending?${params.toString()}') {
+export async function loadDocs(tableBodySelector, url = '/api/documents/keep?${params.toString()}') {
     const tableBody = document.querySelector(tableBodySelector);
     
     try {
@@ -253,19 +244,6 @@ function renderPagination(pagination) {
         linksContainer.appendChild(li);
     });
 }
-    // View document click handler
-//     document.addEventListener('click', function(e) {
-//         const viewBtn = e.target.closest('.view');
-//         if (viewBtn) {
-//             e.preventDefault();
-//             const row = viewBtn.closest('tr');
-//             const trackingNumber = row.querySelector('td:first-child').textContent.trim();
-            
-//             // Redirect to find.blade.php with tracking number as URL parameter
-//             window.location.href = `/find?tracking=${encodeURIComponent(trackingNumber)}`;
-//         }
-//     });
-// }
 
 // Add these functions to your module
 function showDocumentModal(trackingNumber) {
@@ -457,119 +435,4 @@ function addDocumentClickHandlers() {
             showDocumentModal(trackingNumber);
         });
     });
-}
-
-// Add this function after other export functions
-export async function deferDocument(actionId, remarks) {
-    if (!isOnline()) {
-        throw new Error('Cannot defer document while offline');
-    }
-
-    const token = localStorage.getItem('auth_token');
-    if (!token) {
-        throw new Error('Authentication required');
-    }
-
-    try {
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
-        if (!csrfToken) {
-            throw new Error('CSRF token not found');
-        }
-
-        // Log the request details for debugging
-        console.log('Sending defer request:', {
-            url: `/api/documents/routes/${actionId}/defer`,
-            actionId,
-            remarks
-        });
-
-        const response = await fetch(`/api/documents/routes/${actionId}/defer`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
-                'X-Requested-With': 'XMLHttpRequest',
-                'Authorization': `Bearer ${token}`
-            },
-            credentials: 'include', // Include cookies
-            body: JSON.stringify({
-                actionid: parseInt(actionId), // Ensure integer
-                actions_taken: remarks || null // Ensure null if empty
-            })
-        });
-
-        // Log the raw response for debugging
-        console.log('Raw response:', response);
-
-        const responseData = await response.json();
-        console.log('Response data:', responseData);
-
-        if (!response.ok) {
-            throw new Error(responseData.message || responseData.error || 'Failed to defer document');
-        }
-
-        return responseData;
-
-    } catch (error) {
-        console.error('Error in deferDocument:', error);
-        throw new Error(`Error deferring document: ${error.message}`);
-    }
-}
-
-export async function keepDocument(actionId, remarks) {
-    if (!isOnline()) {
-        throw new Error('Cannot keep document while offline');
-    }
-
-    const token = localStorage.getItem('auth_token');
-    if (!token) {
-        throw new Error('Authentication required');
-    }
-
-    try {
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
-        if (!csrfToken) {
-            throw new Error('CSRF token not found');
-        }
-
-        // Log the request details for debugging
-        console.log('Sending keep request:', {
-            url: `/api/documents/routes/${actionId}/keep`,
-            actionId,
-            remarks
-        });
-
-        const response = await fetch(`/api/documents/routes/${actionId}/keep`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
-                'X-Requested-With': 'XMLHttpRequest',
-                'Authorization': `Bearer ${token}`
-            },
-            credentials: 'include', // Include cookies
-            body: JSON.stringify({
-                actionid: parseInt(actionId), // Ensure integer
-                actions_taken: remarks || null // Ensure null if empty
-            })
-        });
-
-        // Log the raw response for debugging
-        console.log('Raw response:', response);
-
-        const responseData = await response.json();
-        console.log('Response data:', responseData);
-
-        if (!response.ok) {
-            throw new Error(responseData.message || responseData.error || 'Failed to keep document');
-        }
-
-        return responseData;
-
-    } catch (error) {
-        console.error('Error in keepDocument:', error);
-        throw new Error(`Error keepring document: ${error.message}`);
-    }
 }

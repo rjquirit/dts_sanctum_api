@@ -45,19 +45,19 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/profile/password', [ProfileController::class, 'updatePassword']);
 
     Route::get('/documents/{type?}', [DocmainController::class, 'index'])
-        ->where('type', 'mydocs|incoming|pending|forward|deferred');
+        ->where('type', 'mydocs|incoming|pending|forward|deferred|keep|release');
     // Route::get('/documents/incoming', [DocmainController::class, 'index'])->defaults('type', 'incoming')->name('documents.incoming');
     // Route::get('/documents/pending', [DocmainController::class, 'index'])->defaults('type', 'pending')->name('documents.pending');
     // Route::get('/documents/forward', [DocmainController::class, 'index'])->defaults('type', 'forward')->name('documents.forward');
     // Route::get('/documents/deferred', [DocmainController::class, 'index'])->defaults('type', 'deferred')->name('documents.deferred');
     
     Route::post('documents/routes/{actionId}/accept', [DocmainController::class, 'acceptRoute']);
+    Route::post('documents/routes/{actionId}/keep', [DocmainController::class, 'keepRoute']);
     Route::post('documents/routes/{actionId}/defer', [DocmainController::class, 'deferredRoute'])->name('documents.defer');
     Route::post('documents/routes/{actionId}/forward', [DocmainController::class, 'forwardRoute']);
     Route::post('documents/{id}/deactivate', [DocmainController::class, 'deactivate']);
     Route::post('documents/{id}/activate', [DocmainController::class, 'activate']);
     Route::post('documents/{id}/mark-done', [DocmainController::class, 'markDone']);
-    Route::post('documents/{id}/accept', [DocmainController::class, 'accept']);
     Route::get('documents-stats', [DocmainController::class, 'stats']);
 
     Route::apiResource('users', UserController::class);

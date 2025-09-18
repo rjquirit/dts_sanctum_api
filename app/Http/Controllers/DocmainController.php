@@ -52,6 +52,8 @@ class DocmainController extends Controller
                 'forward'  => 3, '3' => 3,
                 'deferred' => 4, '4' => 4,
                 'mydocs'   => 5, '5' => 5,
+                'keep'     => 6, '6' => 6,
+                'release'  => 7, '7' => 7
             ];
             $case = $typeMap[$typeInput] ?? 1; // default to incoming
             Log::info("DocmainController@index called", [
@@ -94,12 +96,12 @@ class DocmainController extends Controller
                 case 2: // pending
                     $query->where('dts_docroutes.datetime_route_accepted', '<>', 0)
                         ->where('dts_docroutes.active', 1)
-                        ->where('dts_docroutes.route_accomplished', '<>', 4);
+                        ->where('dts_docroutes.route_accomplished', '=', 0);
                     break;
                 case 3: // forward
                     $query->where('dts_docroutes.datetime_route_accepted', '<>', 0)
                         ->where('dts_docroutes.active', 1)
-                        ->where('dts_docroutes.route_accomplished', '<>', 4);
+                        ->where('dts_docroutes.route_accomplished', '=', 1);
                     break;
                 case 4: // deferred
                     $query->where('dts_docroutes.datetime_route_accepted', '<>', 0)
@@ -107,9 +109,18 @@ class DocmainController extends Controller
                         ->where('dts_docroutes.route_accomplished', '=', 4);
                     break;
                 case 5: // mydocs
-                    // Show documents created by the user
                     $query->where('dts_docroutes.datetime_route_accepted', 0)
                         ->where('dts_docroutes.active', 1);
+                    break;
+                case 6: // keep
+                    $query->where('dts_docroutes.datetime_route_accepted', '<>', 0)
+                        ->where('dts_docroutes.active', 1)
+                        ->where('dts_docroutes.route_accomplished', '=', 2);
+                    break;
+                case 7: // release
+                    $query->where('dts_docroutes.datetime_route_accepted', '<>', 0)
+                        ->where('dts_docroutes.active', 1)
+                        ->where('dts_docroutes.route_accomplished', '=', 3);
                     break;
                 default:
                     $query->where('dts_docroutes.datetime_route_accepted', 0)
@@ -748,18 +759,28 @@ public function keepRoute(Request $request): JsonResponse
 
         // ✅ Update for keeping document
         $route->update([
-            'action_datetime'   => now(),
-            'actions_taken'     => $validated['actions_taken'],
-            'actionby_id'       => $user->id,
-            'acted_by'          => $user->name,
-            'route_accomplished'=> 2,
-            'doc_copy'          => 1,
+            'action_datetime'    => now(),
+            'actions_taken'      => $validated['actions_taken'],
+            'actionby_id'        => $user->id,
+            'acted_by'           => $user->name,
+            'route_accomplished' => 2,
+            'doc_copy'           => 1,
         ]);
 
-        // ✅ Call markDone using document_id
+        // ✅ Call markDone using remarks + document_id
         if (method_exists($this, 'markDone')) {
             $this->markDone($validated['actions_taken'], $route->document_id);
         }
+
+        // ✅ Log activity
+        Log::info('Document kept successfully', [
+            'action_id'     => $validated['actionid'],
+            'document_id'   => $route->document_id,
+            'actions_taken' => $validated['actions_taken'],
+            'user_id'       => $user->id,
+            'user_name'     => $user->name,
+            'section_id'    => $user->section_id,
+        ]);
 
         return response()->json([
             'success' => true,
@@ -768,15 +789,20 @@ public function keepRoute(Request $request): JsonResponse
         ]);
 
     } catch (ModelNotFoundException $e) {
+        Log::warning('KeepRoute attempted on missing route', [
+            'action_id' => $request->actionid,
+            'user_id'   => auth()->id()
+        ]);
+
         return response()->json([
             'success' => false,
             'message' => 'Document route not found'
         ], 404);
     } catch (\Exception $e) {
         Log::error('Error keeping document route', [
-            'action_id' => $request->actionid,
-            'error'     => $e->getMessage(),
-            'user_id'   => auth()->id()
+            'action_id'     => $request->actionid,
+            'error'         => $e->getMessage(),
+            'user_id'       => auth()->id()
         ]);
 
         return response()->json([
@@ -786,6 +812,7 @@ public function keepRoute(Request $request): JsonResponse
         ], 500);
     }
 }
+
 
 public function deferredRoute(Request $request): JsonResponse
 {

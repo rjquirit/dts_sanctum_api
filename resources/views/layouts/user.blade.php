@@ -86,9 +86,17 @@
                     <i class="fas fa-share"></i>
                     <span>Forward</span>
                 </a></li>
-                <li><a href="{{ route('archive') }}" class="nav-link {{ request()->routeIs('archive') ? 'active' : '' }}">
-                    <i class="fas fa-archive"></i>
+                <li><a href="{{ route('deferred') }}" class="nav-link {{ request()->routeIs('deferred') ? 'active' : '' }}">
+                    <i class="fas fa-clock"></i>
                     <span>Deferred</span>
+                </a></li>
+                <li><a href="{{ route('keep') }}" class="nav-link {{ request()->routeIs('keep') ? 'active' : '' }}">
+                    <i class="fas fa-archive"></i>
+                    <span>Keep</span>
+                </a></li>
+                <li><a href="{{ route('release') }}" class="nav-link {{ request()->routeIs('release') ? 'active' : '' }}">
+                    <i class="fas fa-plane"></i>
+                    <span>Released</span>
                 </a></li>
             </ul>
         </aside>
@@ -117,9 +125,9 @@
                 <i class="fas fa-share"></i>
                 <span>Send</span>
             </a>
-            <a href="{{ route('archive') }}" class="nav-item {{ request()->routeIs('archive') ? 'active' : '' }}">
-                <i class="fas fa-archive"></i>
-                <span>Keep</span>
+            <a href="{{ route('deferred') }}" class="nav-item {{ request()->routeIs('deferred') ? 'active' : '' }}">
+                <i class="fas fa-clock"></i>
+                <span>Defer</span>
             </a>
         </nav>
     </div>

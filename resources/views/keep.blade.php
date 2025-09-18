@@ -84,7 +84,7 @@
 <div class="container-fluid">
     <div class="row">
         <div class="col-12">
-            <h5>Pending Documents</h5>
+            <h5>Keeped Documents</h5>
             <hr>
             
             <!-- Toggle Switch for Document Type -->
@@ -92,7 +92,7 @@
                 <div class="col-md-3">
                     <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" id="toggleSwitch">
-                        <label class="form-check-label" for="toggleSwitch">Show Personal Pending Documents</label>
+                        <label class="form-check-label" for="toggleSwitch">Show Personal Keeped Documents</label>
                     </div>
 
                 </div>
@@ -234,96 +234,8 @@
     </div>
 </div>
 
-<!-- Defer Document Modal -->
-<div class="modal fade" id="deferDocumentModal" tabindex="-1" aria-labelledby="deferDocumentModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="deferDocumentModalLabel">Defer Document</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <!-- Document Info Section -->
-                <div class="document-info mb-3">
-                    <h6>Document Details</h6>
-                    <div class="row">
-                        <div class="col-4 fw-bold">Tracking #:</div>
-                        <div class="col-8" id="deferTrackingNo"></div>
-                    </div>
-                    <div class="row">
-                        <div class="col-4 fw-bold">Description:</div>
-                        <div class="col-8" id="deferDescription"></div>
-                    </div>
-                    <div class="row">
-                        <div class="col-4 fw-bold">From:</div>
-                        <div class="col-8" id="deferFrom"></div>
-                    </div>
-                </div>
-
-                <!-- Defer Reason Form -->
-                <form id="deferDocumentForm">
-                    <input type="hidden" id="deferActionId" name="actionId">
-                    <div class="mb-3">
-                        <label for="deferReason" class="form-label">Reason for Deferring</label>
-                        <textarea class="form-control" id="deferReason" name="deferReason" rows="4" required></textarea>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-danger" id="confirmDeferBtn">Confirm Defer</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Keep Document Modal -->
-<div class="modal fade" id="keepDocumentModal" tabindex="-1" aria-labelledby="keepDocumentModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="keepDocumentModalLabel">keep Document</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <!-- Document Info Section -->
-                <div class="document-info mb-3">
-                    <h6>Document Details</h6>
-                    <div class="row">
-                        <div class="col-4 fw-bold">Tracking #:</div>
-                        <div class="col-8" id="keepTrackingNo"></div>
-                    </div>
-                    <div class="row">
-                        <div class="col-4 fw-bold">Description:</div>
-                        <div class="col-8" id="keepDescription"></div>
-                    </div>
-                    <div class="row">
-                        <div class="col-4 fw-bold">From:</div>
-                        <div class="col-8" id="keepFrom"></div>
-                    </div>
-                </div>
-
-                <!-- keep Reason Form -->
-                <form id="keepDocumentForm">
-                    <input type="hidden" id="keepActionId" name="actionId">
-                    <div class="mb-3">
-                        <label for="keepReason" class="form-label">Are you sure you want to keep this Document?<br>
-                        Please state your reason below if necessary.
-                        </label>
-                        <textarea class="form-control" id="keepReason" name="keepReason" rows="4" required></textarea>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="confirmkeepBtn">Confirm keep</button>
-            </div>
-        </div>
-    </div>
-</div>
-
 @push('scripts')
-<script type="module" src="{{ asset('js/doc_pending.js') }}"></script>
+<script type="module" src="{{ asset('js/doc_keep.js') }}"></script>
 @endpush
 
 @endsection

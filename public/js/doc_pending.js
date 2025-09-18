@@ -1,4 +1,4 @@
-import { loadDocs, deferDocument } from './modules/docsPending.js';
+import { loadDocs, deferDocument, keepDocument } from './modules/docsPending.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM loaded, initializing...');
@@ -54,7 +54,151 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initial sort indicators
     updateSortIndicatorsFromUrl();
+
+        // Add click handler for accept buttons
+    document.querySelector('#documentsTableBody').addEventListener('click', (e) => {
+        const acceptBtn = e.target.closest('.defer');
+        if (acceptBtn) {
+            const row = acceptBtn.closest('tr');
+            const actionId = row.querySelector('input[name="action_id"]').value; // Get the hidden action_id
+            showDeferModal({
+                actionId: actionId, // Use the action_id from hidden input
+                tracking: row.querySelector('td:nth-child(1)').textContent.trim(),
+                description: row.querySelector('td:nth-child(2)').textContent.trim(),
+                from: row.querySelector('td:nth-child(3)').textContent.trim()
+            });
+        }
+    });
+
+    document.getElementById('confirmDeferBtn')?.addEventListener('click', async function() {
+        try {
+            const actionId = document.getElementById('deferActionId').value;
+            const deferReason = document.getElementById('deferReason').value;
+
+            if (!deferReason.trim()) {
+                alert('Please provide a reason for deferring the document.');
+                return;
+            }
+
+            // Show loading state
+            this.disabled = true;
+            this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
+
+            // Call the deferDocument function
+            const result = await deferDocument(actionId, deferReason);
+
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('deferDocumentModal'));
+            modal.hide();
+
+            // Show success message
+            alert('Document has been deferred successfully');
+
+            // Clear any cached data
+            localStorage.removeItem('cached_docs_pending');
+
+            // Force a complete page reload from server
+            window.location.reload(true);
+
+        } catch (error) {
+            console.error('Error deferring document:', error);
+            alert(error.message);
+        } finally {
+            // Reset button state
+            this.disabled = false;
+            this.innerHTML = 'Confirm Defer';
+            
+            // Clear form
+            document.getElementById('deferReason').value = '';
+        }
+    });
+
+    document.querySelector('#documentsTableBody').addEventListener('click', (e) => {
+        const acceptBtn = e.target.closest('.keep');
+        if (acceptBtn) {
+            const row = acceptBtn.closest('tr');
+            const actionId = row.querySelector('input[name="action_id"]').value; // Get the hidden action_id
+            showKeepModal({
+                actionId: actionId, // Use the action_id from hidden input
+                tracking: row.querySelector('td:nth-child(1)').textContent.trim(),
+                description: row.querySelector('td:nth-child(2)').textContent.trim(),
+                from: row.querySelector('td:nth-child(3)').textContent.trim()
+            });
+        }
+    });
+
+    document.getElementById('confirmkeepBtn')?.addEventListener('click', async function() {
+        try {
+            const actionId = document.getElementById('keepActionId').value;
+            const keepReason = document.getElementById('keepReason').value;
+
+            if (!keepReason.trim()) {
+                alert('Please provide a reason for keepring the document.');
+                return;
+            }
+
+            // Show loading state
+            this.disabled = true;
+            this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
+
+            // Call the keepDocument function
+            const result = await keepDocument(actionId, keepReason);
+
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('keepDocumentModal'));
+            modal.hide();
+
+            // Show success message
+            alert('Document has been keeped successfully');
+
+            // Clear any cached data
+            localStorage.removeItem('cached_docs_pending');
+
+            // Force a complete page reload from server
+            window.location.reload(true);
+
+        } catch (error) {
+            console.error('Error Keeping document:', error);
+            alert(error.message);
+        } finally {
+            // Reset button state
+            this.disabled = false;
+            this.innerHTML = 'Confirm Keep';
+            
+            // Clear form
+            document.getElementById('keepReason').value = '';
+        }
+    });
 });
+
+// Add this after document.addEventListener('DOMContentLoaded', ...)
+document.querySelector('#documentsTableBody').addEventListener('click', (e) => {
+    const printBtn = e.target.closest('.print-doc');
+    if (printBtn) {
+        e.preventDefault();
+        const trackingNumber = printBtn.dataset.tracking;
+        if (trackingNumber) {
+            printDocument(trackingNumber);
+        }
+    }
+});
+
+function printDocument(trackingNumber) {
+    // Open print.blade.php in a new window
+    const printWindow = window.open(`/print/${trackingNumber}/doc`, '_blank', 'width=800,height=600');
+    
+    // Add event listener to monitor when the window finishes loading
+    printWindow.onload = function() {
+        // Give some time for the content to fully render
+        setTimeout(() => {
+            printWindow.print();
+            // Close the window after printing (optional)
+            printWindow.onafterprint = function() {
+                printWindow.close();
+            };
+        }, 1000);
+    };
+}
 
 function updateSortIndicators(sortBy, sortOrder) {
     // Remove all sort indicators
@@ -126,77 +270,32 @@ function debounce(func, wait) {
         timeout = setTimeout(() => func.apply(context, args), wait);
     };
 }
-// Add this after document.addEventListener('DOMContentLoaded', ...)
-document.querySelector('#documentsTableBody').addEventListener('click', (e) => {
-    const printBtn = e.target.closest('.print-doc');
-    if (printBtn) {
-        e.preventDefault();
-        const trackingNumber = printBtn.dataset.tracking;
-        if (trackingNumber) {
-            printDocument(trackingNumber);
-        }
-    }
-});
-
-function printDocument(trackingNumber) {
-    // Open print.blade.php in a new window
-    const printWindow = window.open(`/print/${trackingNumber}/doc`, '_blank', 'width=800,height=600');
+function showDeferModal(docInfo) {
+    // Populate modal with document info
+    document.querySelector('#deferActionId').value = docInfo.actionId;
+    document.querySelector('#deferTrackingNo').textContent = docInfo.tracking;
+    document.querySelector('#deferDescription').textContent = docInfo.description;
+    document.querySelector('#deferFrom').textContent = docInfo.from;
     
-    // Add event listener to monitor when the window finishes loading
-    printWindow.onload = function() {
-        // Give some time for the content to fully render
-        setTimeout(() => {
-            printWindow.print();
-            // Close the window after printing (optional)
-            printWindow.onafterprint = function() {
-                printWindow.close();
-            };
-        }, 1000);
-    };
+    // Clear previous remarks
+    document.querySelector('#deferReason').value = '';
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.querySelector('#deferDocumentModal'));
+    modal.show();
 }
 
-// Add after the DOMContentLoaded event listener
-
-// Replace the existing confirmDeferBtn event listener with this updated version:
-document.getElementById('confirmDeferBtn')?.addEventListener('click', async function() {
-    try {
-        const actionId = document.getElementById('deferActionId').value;
-        const deferReason = document.getElementById('deferReason').value;
-
-        if (!deferReason.trim()) {
-            alert('Please provide a reason for deferring the document.');
-            return;
-        }
-
-        // Show loading state
-        this.disabled = true;
-        this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
-
-        // Call the deferDocument function
-        const result = await deferDocument(actionId, deferReason);
-
-        // Close modal
-        const modal = bootstrap.Modal.getInstance(document.getElementById('deferDocumentModal'));
-        modal.hide();
-
-        // Show success message
-        alert('Document has been deferred successfully');
-
-        // Clear any cached data
-        localStorage.removeItem('cached_docs');
-
-        // Force a complete page reload from server
-        window.location.reload(true);
-
-    } catch (error) {
-        console.error('Error deferring document:', error);
-        alert(error.message);
-    } finally {
-        // Reset button state
-        this.disabled = false;
-        this.innerHTML = 'Confirm Defer';
-        
-        // Clear form
-        document.getElementById('deferReason').value = '';
-    }
-});
+function showKeepModal(docInfo) {
+    // Populate modal with document info
+    document.querySelector('#keepActionId').value = docInfo.actionId;
+    document.querySelector('#keepTrackingNo').textContent = docInfo.tracking;
+    document.querySelector('#keepDescription').textContent = docInfo.description;
+    document.querySelector('#keepFrom').textContent = docInfo.from;
+    
+    // Clear previous remarks
+    document.querySelector('#keepReason').value = '';
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.querySelector('#keepDocumentModal'));
+    modal.show();
+} 
