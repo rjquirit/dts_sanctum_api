@@ -2,15 +2,16 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <meta name="theme-color" content="#2c3e50">
+    <meta name="theme-color" content="#FF8C42">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="DTS API">
-    <meta name="msapplication-TileColor" content="#2c3e50">
+    <meta name="apple-mobile-web-app-title" content="DTS">
+    <meta name="msapplication-TileColor" content="#FF8C42">
     <meta name="msapplication-config" content="/browserconfig.xml">
-    <title>{{ config('app.name', 'ROX') }} - @yield('title')</title>
+    <title>{{ config('app.name', 'DTS') }} - @yield('title')</title>
     
     <!-- CSS -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
