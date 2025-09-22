@@ -15,8 +15,12 @@ document.addEventListener('DOMContentLoaded', function() {
     loadDoctypes('#doc_type_id');
     loadSections('#receiving_section');
 
-    // Bind form actions - this will handle the form submission
-    bindDocsActions('#documentForm', null);
+    // Bind form actions with success callback
+    bindDocsActions('#documentForm', null, () => {
+        // Show success modal
+        const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+        successModal.show();
+    });
 
     // Handle cancel button
     const cancelBtn = document.getElementById('cancelBtn');

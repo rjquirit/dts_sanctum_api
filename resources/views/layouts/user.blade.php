@@ -105,6 +105,7 @@
         <!-- Main Content Area -->
         <main class="main-content">
             @yield('content')
+            <div class="mobile-bottom-spacer"></div>
             <a href="{{ route('add') }}" class="btn btn-primary d-flex align-items-center justify-content-center fab shadow-lg">+</a>
         </main>
 
@@ -179,6 +180,38 @@
 
         // Add logout event listener
         document.getElementById('logoutBtn').addEventListener('click', logout);
+        function adjustMobileSpacing() {
+            const isMobile = window.innerWidth <= 768 && window.innerHeight > window.innerWidth;
+            const mainContent = document.querySelector('.main-content');
+            const bottomNav = document.querySelector('.bottom-nav');
+            
+            if (isMobile && bottomNav && mainContent) {
+                const bottomNavHeight = bottomNav.offsetHeight;
+                const buffer = 30; // Extra buffer space
+                
+                // Set bottom padding
+                mainContent.style.paddingBottom = `${bottomNavHeight + buffer}px`;
+                
+                // Ensure tables have proper spacing
+                const tables = document.querySelectorAll('.table-responsive');
+                tables.forEach(table => {
+                    table.style.marginBottom = '30px';
+                });
+                
+                // Ensure pagination has proper spacing
+                const pagination = document.querySelector('.pagination');
+                if (pagination) {
+                    pagination.style.marginBottom = '30px';
+                }
+            }
+        }
+
+        // Run on load and resize
+        document.addEventListener('DOMContentLoaded', adjustMobileSpacing);
+        window.addEventListener('resize', adjustMobileSpacing);
+        window.addEventListener('orientationchange', () => {
+            setTimeout(adjustMobileSpacing, 100); // Small delay for orientation change
+        });
     </script>
     @stack('scripts')
 </body>

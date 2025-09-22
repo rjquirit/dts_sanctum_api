@@ -79,16 +79,16 @@ export async function loadSections(selectSelector) {
         }
 
         // Filter out the current user's section
-        const userSectionId = document.getElementById('origin_section')?.value;
-        const filteredSections = sections.filter(section => {
-            const sectionId = section.section_id || '';
-            return !userSectionId || sectionId != userSectionId;
-        });
+        // const userSectionId = document.getElementById('origin_section')?.value;
+        // const filteredSections = sections.filter(section => {
+        //     const sectionId = section.section_id || '';
+        //     return !userSectionId || sectionId != userSectionId;
+        // });
         
         // Populate select with sections
         select.innerHTML = `
             <option value="">-- Select Receiving Unit --</option>
-            ${filteredSections.map(section => {
+            ${sections.map(section => {
                 const sectionId = section.section_id || '';
                 const sectionName = section.section_description || 'Unnamed Section';
                 return sectionId ? `<option value="${sectionId}">${sectionName}</option>` : '';
@@ -192,7 +192,8 @@ export function bindDocsActions(formSelector, tableBodySelector = null) {
             }
 
             // Show success message
-            showSuccess('Document submitted successfully!');
+            alert('Document has been submitted successfully');
+            showSuccess('Document submitted successfully.');
             
             // Reset form
             form.reset();

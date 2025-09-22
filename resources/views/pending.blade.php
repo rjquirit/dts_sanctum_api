@@ -349,28 +349,35 @@
                 </div>
 
                 <!-- release Reason Form -->
-                <form id="releaseDocumentForm">
-                    <input type="hidden" id="releaseActionId" name="actionId">
-                    <div class="mb-3">
-                        <label for="releaseReason" class="form-label">Actions Taken<br></label>
-                        <textarea class="form-control" id="releaseReason" name="releaseReason" rows="4" required></textarea>
+                
+                    <form id="releaseDocumentForm">
+                        <input type="hidden" id="releaseActionId" name="actionId">
 
-                        <div class="form-check" style="margin-top: 10px;">
-                            <input type="checkbox" class="form-check-input" id="releaseCopy" name="releaseCopy" checked>
-                            <label class="form-check-label" for="releaseCopy">Remain Copies of Document</label>
+                        <div class="mb-3">
+                            <label for="releaseReason" class="form-label">Actions Taken</label>
+                            <textarea class="form-control" id="releaseReason" name="releaseReason" rows="4" required></textarea>
+
+                            <div class="form-check mt-2">
+                                <input type="checkbox" class="form-check-input" id="releaseCopy" name="releaseCopy" checked>
+                                <label class="form-check-label" for="releaseCopy">Remain Copies of Document</label>
+                            </div>
+
+                            <label for="releaseTO" class="form-label mt-3">Release to</label>
+                            <input type="text" class="form-control" id="releaseTO" name="releaseTO" placeholder="Name, Contact, Office">
+
+                            <label for="releaseLogbookinfo" class="form-label mt-3">Reference or Logbook Information</label>
+                            <input type="text" class="form-control" id="releaseLogbookinfo" name="releaseLogbookinfo" placeholder="Reference Number, Logbook Page">
                         </div>
-
-                        <label for="releaseTO" class="form-label">Release to</label>
-                        <input type="text" class="form-control" id="releaseTO" name="releaseTO" placeholder="Name, Contact, Office">
-
-                        <label for="releaseLogbookinfo" class="form-label">Reference or Logbook Information</label>
-                        <input type="text" class="form-control" id="releaseLogbookinfo" name="releaseLogbookinfo" placeholder="Reference Number, Logbook Page">
-                    </div>
-                </form>
+                    </form>
+               
             </div>
             <div class="modal-footer">
+                @if(auth()->check() && in_array(auth()->user()->section_id, [1, 14, 21]))
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-success" id="confirmreleaseBtn">Confirm release</button>
+                 @else
+                    <p class="text-danger">You do not have permission to release this document.</p>
+                @endif
             </div>
         </div>
     </div>

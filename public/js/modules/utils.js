@@ -16,10 +16,9 @@ export function showError(message, container = null) {
  * Show success message
  */
 export function showSuccess(message) {
-    // You can use your preferred alert/toast library here
-    // For example, using Bootstrap's toast:
     const toast = document.createElement('div');
-    toast.className = 'toast align-items-center text-white bg-success border-0 position-fixed top-0 end-0 m-3';
+    toast.className = 'toast align-items-center text-white bg-success border-0 position-fixed end-0 m-3';
+    toast.style.top = '70px'; // 👈 move below navbar (adjust as needed)
     toast.setAttribute('role', 'alert');
     toast.innerHTML = `
         <div class="d-flex">
@@ -32,11 +31,9 @@ export function showSuccess(message) {
     document.body.appendChild(toast);
     const bsToast = new bootstrap.Toast(toast);
     bsToast.show();
-    
-    // Remove toast after it's hidden
+
     toast.addEventListener('hidden.bs.toast', () => toast.remove());
 }
-
 /**
  * Show alert message
  */

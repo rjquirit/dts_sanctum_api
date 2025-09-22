@@ -23,7 +23,7 @@ class DocmainController extends Controller
     public function index(Request $request): JsonResponse
     {
         try {
-            // Handle both auth:sanctum and VerifySanctumToken middleware
+            // Authentication check
             $user = auth()->user();
             if (!$user) {
                 return response()->json([
@@ -31,6 +31,8 @@ class DocmainController extends Controller
                     'message' => 'Please log in to access documents'
                 ], 401);
             }
+    
+            // Debug logging
             Log::info("DocmainController@index DEBUG", [
                 'user_id' => $user->id,
                 'request_url' => $request->fullUrl(),
@@ -40,12 +42,13 @@ class DocmainController extends Controller
                 'query_parameters' => $request->query(),
                 'all_parameters' => $request->all(),
             ]);
-            // Get the current route name
+    
+            // Get document type from route/request
             $routeName = $request->route()->getName();
             $typeInput = strtolower(
                 $request->route('type') ?? $request->get('type', 'incoming')
             );
-
+    
             $typeMap = [
                 'incoming' => 1, '1' => 1,
                 'pending'  => 2, '2' => 2,
@@ -55,130 +58,129 @@ class DocmainController extends Controller
                 'keep'     => 6, '6' => 6,
                 'release'  => 7, '7' => 7
             ];
-            $case = $typeMap[$typeInput] ?? 1; // default to incoming
-            Log::info("DocmainController@index called", [
-                'user_id' => $user->id,
-                'type' => $typeInput,
-                'case' => $case,
-                'route_name' => $routeName,
-            ]);   
-
-            $sortBy = $request->get('sort_by', 'dts_docroutes.action_id');
+            $case = $typeMap[$typeInput] ?? 1;
+    
+            // Sorting parameters
+            $sortBy = $request->get('sort_by', 'action_id');
             $sortOrder = strtolower($request->get('sort_order', 'desc')) === 'asc' ? 'asc' : 'desc';
-
+    
             $sortMap = [
-                // route columns (dts_docroutes)
-                'action_id' => 'dts_docroutes.action_id',
-                'datetime_forwarded' => 'dts_docroutes.datetime_forwarded',
-                'datetime_route_accepted' => 'dts_docroutes.datetime_route_accepted',
-                'route_purpose' => 'dts_docroutes.route_purpose',
-                // doc (dts_docs) columns
+                'action_id' => 'latest_route.action_id',
+                'datetime_forwarded' => 'latest_route.datetime_forwarded',
+                'datetime_route_accepted' => 'latest_route.datetime_route_accepted',
+                'route_purpose' => 'latest_route.route_purpose',
                 'datetime_posted' => 'dts_docs.datetime_posted',
                 'doc_tracking' => 'dts_docs.doc_tracking',
                 'docs_description' => 'dts_docs.docs_description',
                 'origin_fname' => 'dts_docs.origin_fname',
             ];
-
-            // if unknown sort request, default to a safe column
-            $sortColumn = $sortMap[$sortBy] ?? 'dts_docroutes.action_id';
-
-            // --- base query: select routes and join docs so we can sort by doc fields safely ---
-            $query = Docroutes::select('dts_docroutes.*')
-                ->leftJoin('dts_docs', 'dts_docs.doc_id', '=', 'dts_docroutes.document_id')
-                ->with(['document.doctype', 'document.origin_section', 'document.origin_office']);
             
+            $sortColumn = $sortMap[$sortBy] ?? 'latest_route.action_id';
+    
+            // Base query using latest routes subquery
+            $latestRoutesQuery = Docroutes::select('document_id', 
+                DB::raw('MAX(action_id) as latest_action_id'))
+                ->groupBy('document_id');
+           
+            $query = Docmain::select('dts_docs.*')
+                ->joinSub($latestRoutesQuery, 'latest_groups', function($join) {
+                    $join->on('dts_docs.doc_id', '=', 'latest_groups.document_id');
+                })
+                ->join('dts_docroutes as latest_route', function($join) {
+                    $join->on('latest_groups.latest_action_id', '=', 'latest_route.action_id');
+                })
+                ->with(['doctype', 'origin_section', 'origin_office']);
+    
+            // Apply filters based on case
             switch ($case) {
                 case 1: // incoming
-                    // Keep the route filters (qualified column names)
-                    $query->where('dts_docroutes.datetime_route_accepted', 0)
-                        ->where('dts_docroutes.active', 1)
-                        ->where('dts_docroutes.route_accomplished', '=', 0);
+                    $query->whereNull('latest_route.datetime_route_accepted')
+                        ->where('latest_route.active', 1)
+                        ->where('latest_route.route_accomplished', '=', 0);
                     break;
                 case 2: // pending
-                    $query->where('dts_docroutes.datetime_route_accepted', '<>', 0)
-                        ->where('dts_docroutes.active', 1)
-                        ->where('dts_docroutes.route_accomplished', '=', 0);
+                    $query->whereNotNull('latest_route.datetime_route_accepted')
+                        ->where('latest_route.active', 1)
+                        ->where('latest_route.route_accomplished', '=', 0);
                     break;
                 case 3: // forward
-                    $query->where('dts_docroutes.datetime_route_accepted', '<>', 0)
-                        ->where('dts_docroutes.active', 1)
-                        ->where('dts_docroutes.route_accomplished', '=', 1);
+                    $query->whereNull('latest_route.datetime_route_accepted')
+                        ->where('latest_route.active', 1)
+                        ->where('latest_route.route_accomplished', '=', 0);
                     break;
                 case 4: // deferred
-                    $query->where('dts_docroutes.datetime_route_accepted', '<>', 0)
-                        ->where('dts_docroutes.active', 1)
-                        ->where('dts_docroutes.route_accomplished', '=', 4);
+                    $query->whereNotNull('latest_route.datetime_route_accepted')
+                        ->where('latest_route.active', 1)
+                        ->where('latest_route.route_accomplished', '=', 4);
                     break;
                 case 5: // mydocs
-                    $query->where('dts_docroutes.datetime_route_accepted', 0)
-                        ->where('dts_docroutes.active', 1);
+                    $query->whereNull('latest_route.datetime_route_accepted')
+                        ->where('latest_route.active', 1);
                     break;
                 case 6: // keep
-                    $query->where('dts_docroutes.datetime_route_accepted', '<>', 0)
-                        ->where('dts_docroutes.active', 1)
-                        ->where('dts_docroutes.route_accomplished', '=', 2);
+                    $query->whereNotNull('latest_route.datetime_route_accepted')
+                        ->where('latest_route.active', 1)
+                        ->where('latest_route.route_accomplished', '=', 2);
                     break;
                 case 7: // release
-                    $query->where('dts_docroutes.datetime_route_accepted', '<>', 0)
-                        ->where('dts_docroutes.active', 1)
-                        ->where('dts_docroutes.route_accomplished', '=', 3);
+                    $query->whereNotNull('latest_route.datetime_route_accepted')
+                        ->where('latest_route.active', 1)
+                        ->where('latest_route.route_accomplished', '=', 3);
                     break;
-                default:
-                    $query->where('dts_docroutes.datetime_route_accepted', 0)
-                        ->where('dts_docroutes.active', 1)
-                        ->where('dts_docroutes.route_accomplished', '=', 0);
             }
-
-            // Toggle: personal vs office
+    
+            // Apply toggle filters
             if ($request->has('toggle')) {
-                // use boolean() to allow 'true'/'false' strings
                 if ($request->boolean('toggle')) {
                     switch ($case) {
-                        case 3: $query->where('dts_docroutes.route_fromuser_id', $user->id);
+                        case 3: $query->where('latest_route.route_fromuser_id', $user->id);
                             break;
-                        case 5: $query->where('dts_docroutes.route_fromuser_id', $user->id);
+                        case 5: $query->where('dts_docs.origin_userid', $user->id);
                             break;
-                        default: $query->where('dts_docroutes.route_touser_id', $user->id);
+                        default: $query->where('latest_route.route_touser_id', $user->id);
                             break;
                     }
                 } else {
                     switch ($case) {
-                        case 3: $query->where('dts_docroutes.route_fromsection_id', $user->section_id);
+                        case 3: $query->where('latest_route.route_fromsection_id', $user->section_id);
                             break;
-                        case 5: $query->where('dts_docroutes.route_fromsection_id', $user->section_id);
+                        case 5: $query->where('dts_docs.origin_section', $user->section_id);
                             break;
-                        default: $query->where('dts_docroutes.route_tosection_id', $user->section_id);
+                        default: $query->where('latest_route.route_tosection_id', $user->section_id);
                             break;
                     }
                 }
             } else {
                 switch ($case) {
-                    case 3: $query->where('dts_docroutes.route_fromsection_id', $user->section_id);
+                    case 3: $query->where('latest_route.route_fromsection_id', $user->section_id);
                         break;
-                    case 5: $query->where('dts_docroutes.origin_section', $user->section_id);
+                    case 5: $query->where('dts_docs.origin_section', $user->section_id);
                         break;
-                    default: $query->where('dts_docroutes.route_tosection_id', $user->section_id);
+                    default: $query->where('latest_route.route_tosection_id', $user->section_id);
                         break;
                 }
             }
-
-            // Search: since we've joined dts_docs, search on qualified columns
+    
+            // Apply search filter
             if ($request->filled('search')) {
                 $searchTerm = '%' . $request->search . '%';
                 $query->where(function($q) use ($searchTerm) {
                     $q->where('dts_docs.doc_tracking', 'like', $searchTerm)
-                    ->orWhere('dts_docs.docs_description', 'like', $searchTerm)
-                    ->orWhere('dts_docs.origin_fname', 'like', $searchTerm);
+                        ->orWhere('dts_docs.docs_description', 'like', $searchTerm)
+                        ->orWhere('dts_docs.origin_fname', 'like', $searchTerm);
                 });
             }
-
-            // Apply ordering using qualified column
+             $year=2025;
+            $query->whereYear('dts_docs.datetime_posted', $year);
+    
+            // Apply sorting
             $query->orderByRaw("$sortColumn $sortOrder");
-
+    
+            // Debug logging for query
             $sql = $query->toSql();
             $bindings = $query->getBindings();
             $fullSql = vsprintf(str_replace('?', "'%s'", $sql), $bindings);
-
+    
             Log::info("DocmainController@index SQL DEBUG", [
                 'sql' => $sql,
                 'bindings' => $bindings,
@@ -187,19 +189,20 @@ class DocmainController extends Controller
                 'case' => $case,
                 'type' => $typeInput,
             ]);
-                        // Pagination (select dts_docroutes.* earlier avoids ambiguous column errors)
+    
+            // Paginate results
             $perPage = (int) $request->get('per_page', 15);
             $documents = $query->paginate($perPage);
-
-            // --- transform the paginator items into flat objects your frontend expects ---
-            $documents->getCollection()->transform(function($route) {
-                $doc = $route->document ?? null;
-
+    
+            // Transform results
+            $documents->getCollection()->transform(function($doc) {
+                $route = $doc->latestRoute;
+    
                 return [
-                    'doc_id'             => $doc->doc_id ?? null,
-                    'doc_tracking'       => $doc->doc_tracking ?? '',
+                    'doc_id'             => $doc->doc_id,
+                    'doc_tracking'       => $doc->doc_tracking,
                     'doctype_description'=> $doc->doctype->doctype_description ?? '',
-                    'docs_description'   => $doc->docs_description ?? '',
+                    'docs_description'   => $doc->docs_description,
                     'origin_section'     => $doc->origin_section->section_name ?? ($doc->origin_section ?? ''),
                     'origin_fname'       => $doc->origin_fname ?? ($doc->origin_name ?? ''),
                     'route_fromsection'  => $route->route_fromsection ?? '',
@@ -207,12 +210,10 @@ class DocmainController extends Controller
                     'route_purpose'      => $route->route_purpose ?? '',
                     'fwd_remarks'        => $route->fwd_remarks ?? '',
                     'datetime_forwarded' => optional($route->datetime_forwarded)->format('Y-m-d H:i:s') ?? ($doc->datetime_posted ?? null),
-                    // include route action id for reference
                     'action_id'          => $route->action_id ?? null,
                 ];
             });
-
-            // return the paginator with transformed collection (frontend expects pagination)
+    
             return response()->json([
                 'success' => true,
                 'message' => 'Documents retrieved successfully',
@@ -222,7 +223,7 @@ class DocmainController extends Controller
                 'Pragma' => 'no-cache',
                 'Expires' => '0'
             ]);
-
+    
         } catch (\Exception $e) {
             Log::error('Error in DocmainController@index', [
                 'message' => $e->getMessage(),
@@ -231,7 +232,7 @@ class DocmainController extends Controller
                 'trace' => $e->getTraceAsString(),
                 'user_id' => $request->user()->id ?? null,
             ]);
-
+    
             return response()->json([
                 'success' => false,
                 'message' => 'Error retrieving documents',
