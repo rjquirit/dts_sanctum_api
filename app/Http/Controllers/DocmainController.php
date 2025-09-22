@@ -352,7 +352,11 @@ class DocmainController extends Controller
                 return response()->json([
                     'success' => true,
                     'message' => 'Document submitted successfully',
-                    'data' => $document->load(['doctype', 'origin_section', 'origin_office'])
+                    'data' => [
+                        'doc_id' => $document->doc_id,
+                        'tracking_number' => $document->doc_tracking,
+                        'document' => $document->load(['doctype', 'origin_section', 'origin_office'])
+                    ]
                 ], 201);
 
             } catch (\Exception $e) {

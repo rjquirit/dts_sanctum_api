@@ -55,7 +55,7 @@ function renderDocs(docs, tableBodySelector) {
                 <button class="btn btn-sm btn-info print-doc" data-tracking="${escapeHtml(doc.doc_tracking)}" aria-label="Print Trail">
                     <i class="fas fa-print"></i>
                 </button>
-                <button class="btn btn-sm btn-primary view" aria-label="Edit Route">
+                <button class="btn btn-sm btn-primary forward" aria-label="Edit Route">
                     <i class="fas fa-pen"></i>
                 </button>
             </td>
@@ -594,4 +594,161 @@ function addDocumentClickHandlers() {
             showDocumentModal(trackingNumber);
         });
     });
+}
+export async function forwardDocument(actionId, remarks, forwardCopy, receiving_section, receiving_personnel, forward_purpose) {
+    if (!isOnline()) {
+        throw new Error('Cannot forward document while offline');
+    }
+
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+        throw new Error('Authentication required');
+    }
+
+    try {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+        if (!csrfToken) {
+            throw new Error('CSRF token not found');
+        }
+
+        // Validate required fields
+        if (!actionId) throw new Error('Action ID is required');
+        if (!receiving_section) throw new Error('Receiving section is required');
+        if (!receiving_personnel) throw new Error('Receiving personnel is required');
+        if (!forward_purpose) throw new Error('Forward purpose is required');
+
+        // Log the request details for debugging
+        console.log('Sending forward request:', {
+            actionId,
+            remarks,
+            forwardCopy,
+            receiving_section,
+            receiving_personnel,
+            forward_purpose
+        });
+
+        const response = await fetch(`/api/documents/routes/${actionId}/forward`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                actionid: parseInt(actionId),
+                actions_taken: remarks || null,
+                doc_copy: parseInt(forwardCopy) || 1,
+                route_tosection_id: parseInt(receiving_section),
+                route_touser_id: parseInt(receiving_personnel),
+                fwd_remarks: forward_purpose
+            })
+        });
+
+        const responseData = await response.json();
+
+        // Log the response for debugging
+        console.log('Response:', {
+            status: response.status,
+            data: responseData
+        });
+
+        if (!response.ok) {
+            throw new Error(responseData.message || responseData.error || 'Failed to forward document');
+        }
+
+        return responseData;
+
+    } catch (error) {
+        console.error('Forward document error:', error);
+        throw new Error(`Forward failed: ${error.message}`);
+    }
+}
+
+export async function loadSections() {
+    const sectionSelect = document.querySelector('#receiving_section');
+    
+    try {
+        // Show loading state
+        sectionSelect.innerHTML = '<option value="">Loading sections...</option>';
+        sectionSelect.disabled = true;
+        
+        const response = await fetch('/api/test/sections');
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        const sections = result.data; // Access the data array from the response
+        
+        // Clear and populate sections dropdown
+        sectionSelect.innerHTML = '<option value="">-- Select Receiving Unit --</option>';
+        
+        // Check if sections is an array before using forEach
+        if (Array.isArray(sections)) {
+            sections.forEach(section => {
+                const option = document.createElement('option');
+                option.value = section.section_id;
+                option.textContent = section.section_description;
+                sectionSelect.appendChild(option);
+            });
+        } else {
+            throw new Error('Sections data is not in expected format');
+        }
+        
+        sectionSelect.disabled = false;
+        
+    } catch (error) {
+        console.error('Error loading sections:', error);
+        sectionSelect.innerHTML = '<option value="">Error loading sections</option>';
+        sectionSelect.disabled = false;
+        
+        // Show user-friendly error message
+        alert('Failed to load sections. Please try again.');
+    }
+}
+
+export async function loadSectionUsers(sectionId) {
+    const personnelSelect = document.querySelector('#receiving_personnel');
+    
+    if (!sectionId) {
+        clearPersonnelDropdown();
+        return;
+    }
+    
+    try {
+        // Show loading state
+        personnelSelect.innerHTML = '<option value="">Loading personnel...</option>';
+        personnelSelect.disabled = true;
+        
+        const response = await fetch(`/api/test/sectionusers/${sectionId}/list`);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const users = await response.json();
+        
+        // Clear and populate personnel dropdown
+        personnelSelect.innerHTML = '<option value="">-- Select Personnel --</option>';
+        
+        users.forEach(user => {
+            const option = document.createElement('option');
+            option.value = user.id; // Adjust property name based on your API response
+            option.textContent = user.name; // Adjust property name based on your API response
+            personnelSelect.appendChild(option);
+        });
+        
+        personnelSelect.disabled = false;
+        
+    } catch (error) {
+        console.error('Error loading section users:', error);
+        personnelSelect.innerHTML = '<option value="">Error loading personnel</option>';
+        personnelSelect.disabled = false;
+        
+        // Optionally show user-friendly error message
+        alert('Failed to load personnel. Please try again.');
+    }
 }

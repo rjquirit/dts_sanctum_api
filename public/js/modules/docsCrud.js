@@ -192,9 +192,20 @@ export function bindDocsActions(formSelector, tableBodySelector = null) {
             }
 
             // Show success message
-            alert('Document has been submitted successfully');
             showSuccess('Document submitted successfully.');
             
+            // Get the newly created document ID from the response
+            const trackingNumber = responseData.data?.tracking_number;
+            
+            if (trackingNumber) {
+                // Redirect to the tracking page
+                window.location.href = `/find?tracking=${trackingNumber}`;
+            } else {
+                // Fallback if no ID is returned
+                alert('Document has been submitted successfully');
+                window.location.href = '/incoming';
+            }
+
             // Reset form
             form.reset();
             

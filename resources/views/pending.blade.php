@@ -365,7 +365,7 @@
                             <label for="releaseTO" class="form-label mt-3">Release to</label>
                             <input type="text" class="form-control" id="releaseTO" name="releaseTO" placeholder="Name, Contact, Office">
 
-                            <label for="releaseLogbookinfo" class="form-label mt-3">Reference or Logbook Information</label>
+                            <label for="releaseLogbookinfo" class="form-label mt-3">Release No:</label>
                             <input type="text" class="form-control" id="releaseLogbookinfo" name="releaseLogbookinfo" placeholder="Reference Number, Logbook Page">
                         </div>
                     </form>
@@ -432,8 +432,7 @@
                         </select>
 
                         <label for="forward_purpose" class="form-label">Purpose of Forwarding:</label>
-                        <textarea class="form-control" id="forward_purpose" name="forward_purpose" rows="4" 
-                                  placeholder="Purposes or Actions to be taken..." required>
+                        <textarea class="form-control" id="forward_purpose" name="forward_purpose" rows="4" placeholder="Purposes or Actions to be taken..." required></textarea>
                         </textarea>
                     </div>
                 </form>

@@ -47,7 +47,7 @@
                     <label for="docs_description" class="col-sm-3 col-form-label">Details: <span class="text-danger">*</span></label>
                     <div class="col-sm-9">
                         <textarea class="form-control" id="docs_description" name="docs_description" rows="4" 
-                                  placeholder="Description, Date, Destination" required></textarea>
+                                  placeholder="Office Receive No., Description, Date, Destination" required></textarea>
                         <div class="invalid-feedback">Please enter document details</div>
                     </div>
                 </div>
