@@ -276,3 +276,78 @@ export function bindDocsActions(formSelector, tableBodySelector = null) {
         field.addEventListener('blur', () => validateField(field));
     });
 }
+
+export async function addDocument(docTypeId, docdescription, actionneeded, receivingID) {
+    if (!isOnline()) {
+        throw new Error('Cannot add document while offline');
+    }
+
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+        throw new Error('Authentication required');
+    }
+
+    try {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+        if (!csrfToken) {
+            throw new Error('CSRF token not found');
+        }
+
+        // Log the request details for debugging
+        console.log('Sending keep request:', {
+            url: `/api/documents`,
+            docTypeId,
+            docdescription,
+            actionneeded,
+            receivingID
+        });
+
+        const response = await fetch(`/api/documents`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest',
+                'Authorization': `Bearer ${token}`
+            },
+            credentials: 'include', // Include cookies
+            body: JSON.stringify({
+                doc_type_id: parseInt(docTypeId),
+                docs_description: docdescription || null, 
+                actions_needed: actionneeded || null,
+                receiving_section: parseInt(receivingID),
+            })
+        });
+
+        // Log the raw response for debugging
+        console.log('Raw response:', response);
+
+        const responseData = await response.json();
+        console.log('Response data:', responseData);
+
+        if (!response.ok) {
+            throw new Error(responseData.message || responseData.error || 'Failed to keep document');
+        }
+
+        showSuccess('Document submitted successfully.');
+            
+            // Get the newly created document ID from the response
+            const trackingNumber = responseData.data?.tracking_number;
+            
+            if (trackingNumber) {
+                // Redirect to the tracking page
+                window.location.href = `/find?tracking=${trackingNumber}`;
+            } else {
+                // Fallback if no ID is returned
+                alert('Document has been submitted successfully');
+                window.location.href = '/mydocs';
+            }
+
+        return responseData;
+
+    } catch (error) {
+        console.error('Error in add Document:', error);
+        throw new Error(`Error adding document: ${error.message}`);
+    }
+}

@@ -267,13 +267,8 @@ class DocmainController extends Controller
             $validatedData = $request->validate([
                 'doc_type_id' => 'required|integer',
                 'docs_description' => 'required|string',
-                'origin_fname' => 'required|string|max:255',
                 'receiving_section' => 'required|integer',
                 'actions_needed' => 'required|string',
-                'route_purpose' => 'required|string',
-                // Optional fields
-                'origin_school' => 'nullable|string|max:255',
-                'origin_section' => 'nullable|integer',
             ]);
 
             DB::beginTransaction();
@@ -283,7 +278,7 @@ class DocmainController extends Controller
                     'doc_type_id' => $validatedData['doc_type_id'],
                     'tempdocs_id' => 0, // Set default value
                     'docs_description' => $validatedData['docs_description'],
-                    'origin_fname' => $validatedData['origin_fname'],
+                    'origin_fname' => $user->name,
                     'origin_userid' => $user->id,
                     'origin_school_id' => $validatedData['origin_school_id'] ?? 1,
                     'origin_school' => $validatedData['origin_school'] ?? 'Regional Office',
