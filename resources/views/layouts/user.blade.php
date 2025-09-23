@@ -99,6 +99,10 @@
                     <i class="fas fa-plane"></i>
                     <span>Released</span>
                 </a></li>
+                <li><a href="https://dts.deped10.com" class="nav-link" target="_blank" rel="noopener">
+                    <i class="fas fa-arrow-left"></i>
+                    <span>DTS OLD</span>
+                </a></li>
             </ul>
         </aside>
 

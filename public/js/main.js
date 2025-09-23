@@ -43,8 +43,11 @@ document.addEventListener('DOMContentLoaded', () => {
           const newWorker = registration.installing;
           newWorker.addEventListener('statechange', () => {
             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              console.log('SW: New version available, will activate on next page load');
-            }
+                            // New version available
+                            if (confirm('New version available! Click OK to update.')) {
+                                window.location.reload();
+                            }
+                        }
           });
         });
       })
@@ -646,3 +649,13 @@ const setupHistoryStateHandling = () => {
     handleRouteChange();
   });
 };
+
+if (process.env.NODE_ENV === 'development') {
+    // Unregister service worker in dev
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations()
+            .then(registrations => {
+                registrations.forEach(registration => registration.unregister());
+            });
+    }
+}

@@ -1,15 +1,14 @@
-const CACHE_VERSION = 'v1.0';
+const CACHE_VERSION = Date.now(); // Dynamic version
 const STATIC_CACHE = `static-${CACHE_VERSION}`;
 const DYNAMIC_CACHE = `dynamic-${CACHE_VERSION}`;
 const API_CACHE = `api-${CACHE_VERSION}`;
 
 // Assets to cache immediately
 const STATIC_ASSETS = [
-    '/',
-    '/offline',
-    '/css/style.css',
-    '/js/main.js',
-    '/manifest.json',
+                    '/',
+                    '/offline',
+                    '/css/style.css',
+                    '/js/main.js',
     '/icons/icon-192x192.png',
     '/icons/icon-512x512.png'
 ];

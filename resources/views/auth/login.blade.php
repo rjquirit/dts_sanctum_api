@@ -75,9 +75,9 @@
                             </form>
                         </div>
                     </div>
-                    <p class="text-center mt-3 text-white text-opacity-50">Don't have an account?
+                    <!-- <p class="text-center mt-3 text-white text-opacity-50">Don't have an account?
                         <a href="{{ route('register') }}" class="text-decoration-none text-white fw-bold">Sign Up</a>
-                    </p>
+                    </p> -->
                 </div>
             </div>
         </div>

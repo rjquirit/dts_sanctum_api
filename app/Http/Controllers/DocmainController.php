@@ -199,20 +199,21 @@ class DocmainController extends Controller
                 $route = $doc->latestRoute;
     
                 return [
-                    'doc_id'             => $doc->doc_id,
-                    'doc_tracking'       => $doc->doc_tracking,
+                    'doc_id' => $doc->doc_id,
+                    'doc_tracking' => $doc->doc_tracking,
                     'doctype_description'=> $doc->doctype->doctype_description ?? '',
-                    'docs_description'   => $doc->docs_description,
-                    'origin_section'     => $doc->origin_section->section_name ?? ($doc->origin_section ?? ''),
-                    'origin_fname'       => $doc->origin_fname ?? ($doc->origin_name ?? ''),
-                    'route_fromsection'  => $route->route_fromsection ?? '',
-                    'route_from'         => $route->route_from ?? '',
-                    'route_purpose'      => $route->route_purpose ?? '',
-                    'fwd_remarks'        => $route->fwd_remarks ?? '',
-                    'datetime_forwarded' => optional($route->datetime_forwarded)->format('Y-m-d H:i:s') ?? ($doc->datetime_posted ?? null),
-                    'action_id'          => $route->action_id ?? null,
+                    'docs_description' => $doc->docs_description,
+                    'origin_section' => $doc->origin_section->section_name ?? ($doc->origin_section ?? ''),
+                    'origin_fname' => $doc->origin_fname ?? ($doc->origin_name ?? ''),
+                    'route_fromsection' => $route?->route_fromsection ?? '',
+                    'route_from' => $route?->route_from ?? '',
+                    'route_purpose' => $route?->route_purpose ?? '',
+                    'fwd_remarks' => $route?->fwd_remarks ?? '',
+                    'datetime_forwarded' => $route?->datetime_forwarded?->format('Y-m-d H:i:s') ?? $doc->datetime_posted?->format('Y-m-d H:i:s') ?? null,
+                    'action_id' => $route?->action_id ?? null,
                 ];
             });
+            
     
             return response()->json([
                 'success' => true,
@@ -246,6 +247,12 @@ class DocmainController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
+            Log::info('Document creation attempt:', [
+                'headers' => $request->headers->all(),
+                'method' => $request->method(),
+                'content_type' => $request->header('Content-Type'),
+                'user' => auth()->user()?->id
+            ]);
         try {
             // Get authenticated user
             $user = auth()->user();
@@ -372,13 +379,11 @@ class DocmainController extends Controller
             ], 422);
 
         } catch (\Exception $e) {
-            Log::error('Error creating document', [
-                'message' => $e->getMessage(),
-                // 'file' => $e->getFile(),
-                // 'line' => $e->getLine(),
-                // 'trace' => $e->getTraceAsString(),
-                'user_id' => $user->id ?? null,
+            Log::error('Document creation failed:', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
+            throw $e;
 
             return response()->json([
                 'success' => false,

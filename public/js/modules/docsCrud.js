@@ -130,7 +130,6 @@ export function bindDocsActions(formSelector, tableBodySelector = null) {
         const formData = new FormData(form);
 
         try {
-            // Show loading state
             showLoading(submitBtn);
             
             // Validate required fields
@@ -185,10 +184,30 @@ export function bindDocsActions(formSelector, tableBodySelector = null) {
                 body: JSON.stringify(data)
             });
 
-            const responseData = await response.json();
+            // Log the raw response for debugging
+            console.log('Raw Response:', {
+                status: response.status,
+                statusText: response.statusText,
+                headers: Object.fromEntries(response.headers.entries())
+            });
+
+            let responseData;
+            const responseText = await response.text();
+            
+            try {
+                responseData = JSON.parse(responseText);
+                console.log('Response Data:', responseData);
+            } catch (e) {
+                console.log('Raw Response Text:', responseText);
+                throw new Error('Invalid JSON response from server');
+            }
 
             if (!response.ok) {
-                throw new Error(responseData.message || 'Failed to submit document');
+                throw new Error(
+                    responseData.message || 
+                    responseData.error || 
+                    `Server Error (${response.status}): ${response.statusText}`
+                );
             }
 
             // Show success message
@@ -215,8 +234,26 @@ export function bindDocsActions(formSelector, tableBodySelector = null) {
             }
 
         } catch (error) {
-            console.error('Error submitting document:', error);
-            showError(error.message || 'An error occurred while submitting the document.');
+            console.group('Document Submission Error Details');
+            console.error('Error Details:', {
+                name: error.name,
+                message: error.message,
+                stack: error.stack,
+                response: error.response,
+                data: {
+                    token: !!localStorage.getItem('auth_token'),
+                    csrf: !!document.querySelector('meta[name="csrf-token"]')?.content,
+                    url: form.action,
+                    formData: Object.fromEntries(formData)
+                }
+            });
+            console.groupEnd();
+
+            // Show a more detailed error message
+            showError(`Failed to submit document: ${error.message}`);
+            
+            // Don't throw the error again - handle it here
+            return false;
         } finally {
             hideLoading(submitBtn);
         }
