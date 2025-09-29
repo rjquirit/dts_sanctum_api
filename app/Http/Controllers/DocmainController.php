@@ -1198,4 +1198,142 @@ public function forwardRoute(Request $request): JsonResponse
     }
 }
 
+public function grabRoute(Request $request): JsonResponse
+{
+    try {
+        $user = auth()->user();
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Authentication required'
+            ], 401);
+        }
+
+        // ✅ Validate request
+        $validated = $request->validate([
+            'actionid' => 'required|integer|exists:dts_docs,doc_tracking',
+        ]);
+
+        //$latestActionID=Docmain::where('doc_tracking',$validated['actionid'])->latestRoute()->value('action_id');
+        $latestActionID = Docmain::where('doc_tracking', $validated['actionid'])
+            ->join('dts_docroutes', 'dts_docs.doc_id', '=', 'dts_docroutes.document_id')
+            ->where('dts_docroutes.active', 1)
+            ->max('dts_docroutes.action_id');
+
+        $currentRoute = Docroutes::findOrFail($latestActionID);
+
+        DB::beginTransaction();
+
+        try {
+            // ✅ Update current route
+            $currentRoute->update([
+                'actions_datetime'   => now(),
+                'actions_taken'      => 'Grabbed by ' . $user->name,
+                'actionby_id'        => $user->id,
+                'acted_by'           => $user->name,
+                'route_accomplished' => 1,
+                'doc_copy'           => 0,
+                'fwd_remarks'        => 'Grabbed by ' . $user->name,
+            ]);
+
+            Log::info('Docroutes updated', [
+                'actions_taken'      => 'Grabbed by ' . $user->name,
+                'actionby_id'        => $user->id,
+                'acted_by'           => $user->name,
+                'route_accomplished' => 1,
+                'doc_copy'           => 0,
+                'fwd_remarks'        => 'Grabbed by ' . $user->name,
+            ]);
+
+            // ✅ Create new route
+            $fromSection = Sections::where('section_id', $currentRoute->route_tosection_id)->first();
+            $newRouteData = [
+                'document_id'          => $currentRoute->document_id,
+                'previous_route_id'    => $latestActionID,
+                'route_fromuser_id'    => $currentRoute->route_touser_id,
+                'route_from'           => $user->name, 
+                'route_fromsection_id' => $currentRoute->route_tosection_id,
+                'route_fromsection'    => $fromSection->section_description ?? '(No Section)',
+                'route_tosection_id'   => $user->section_id,
+                'route_tosection'      => $user->section->section_description ?? '(No Section)',
+                'route_touser_id'      => $user->id,
+                'route_purpose'        => 'Taken from ' . $currentRoute->route_tosection,
+                'fwd_remarks'          => 'Taken from ' . $currentRoute->route_tosection,
+                'datetime_forwarded'   => now(),
+                'datetime_route_accepted' => null,
+                'active'               => 1,
+            ];
+
+            $newRoute = Docroutes::create($newRouteData);
+
+            DB::commit();
+
+            // ✅ Log success
+            Log::info('Document Grab successfully', [
+                'action_id'   => $latestActionID,
+                'document_id' => $currentRoute->document_id,
+                'route_fromuser_id'    => $currentRoute->route_touser_id,
+                'route_from'           => $user->name, 
+                'route_fromsection_id' => $currentRoute->route_tosection_id,
+                'route_fromsection'    => $fromSection->section_description ?? '(No Section)',
+                'route_tosection_id'   => $user->section_id,
+                'route_tosection'      => $user->section->section_description ?? '(No Section)',
+                'route_touser_id'      => $user->id,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Document Grabbing successfully',
+                'data'    => $newRoute->load('document')
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            Log::error('DB transaction failed during GrabRoute', [
+                'action_id'   => $latestActionID,
+                'document_id' => $currentRoute->document_id ?? null,
+                'error'       => $e->getMessage(),
+                'user_id'     => $user->id,
+            ]);
+
+            throw $e;
+        }
+
+    } catch (ModelNotFoundException $e) {
+        Log::warning('GrabRoute attempted on missing route', [
+            'action_id' => $request->actionid,
+            'user_id'   => auth()->id()
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Document route not found'
+        ], 404);
+    } catch (ValidationException $e) {
+        Log::warning('GrabRoute validation failed', [
+            'errors'  => $e->errors(),
+            'user_id' => auth()->id()
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Validation failed',
+            'errors'  => $e->errors()
+        ], 422);
+    } catch (\Exception $e) {
+        Log::error('Error Grabbing document route', [
+            'action_id' => $request->actionid,
+            'error'     => $e->getMessage(),
+            'user_id'   => auth()->id()
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Error Grabbing document',
+            'error'   => $e->getMessage()
+        ], 500);
+    }
+}
+
 }

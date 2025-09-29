@@ -58,6 +58,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('documents/routes/{actionId}/release', [DocmainController::class, 'releaseRoute']);
     Route::post('documents/routes/{actionId}/defer', [DocmainController::class, 'deferredRoute']);
     Route::post('documents/routes/{actionId}/forward', [DocmainController::class, 'forwardRoute']);
+    Route::post('documents/routes/{actionId}/grab', [DocmainController::class, 'grabRoute']);
     Route::post('documents/{id}/deactivate', [DocmainController::class, 'deactivate']);
     Route::post('documents/{id}/activate', [DocmainController::class, 'activate']);
     Route::post('documents/{id}/mark-done', [DocmainController::class, 'markDone']);

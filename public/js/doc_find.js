@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const searchBtn = document.getElementById('searchBtn');
     const scanBtn = document.getElementById('scanBtn');
     const printBtn = document.getElementById('printBtn');
+    const grabBtn = document.getElementById('grabBtn');                                                                                                                 
     const loading = document.getElementById('loading');
     const errorMessage = document.getElementById('errorMessage');
     const documentContent = document.getElementById('documentContent');
@@ -70,6 +71,23 @@ document.addEventListener('DOMContentLoaded', function() {
             stopScanning();
         } else {
             startScanning();
+        }
+    });
+
+    // grabDocument button event listener
+    grabBtn.addEventListener('click', function() {
+        const trackingNumber = trackingInput.value.trim();
+        if (trackingNumber) {
+            grabDocument(trackingNumber)
+                .then(response => {
+                    showSuccess('Document grabbed successfully');
+                    searchDocument(trackingNumber); // Refresh the document view
+                })
+                .catch(error => {
+                    showError(error.message);
+                });
+        } else {
+            showError('Please enter a tracking number');
         }
     });
 
@@ -730,3 +748,82 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
+    async function grabDocument(actionId) {
+        if (!isOnline()) {
+            throw new Error('Cannot keep document while offline');
+        }
+    
+        const token = localStorage.getItem('auth_token');
+        if (!token) {
+            throw new Error('Authentication required');
+        }
+    
+        try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+            if (!csrfToken) {
+                throw new Error('CSRF token not found');
+            }
+    
+            // Log the request details for debugging
+            console.log('Sending keep request:', {
+                url: `/api/documents/routes/${actionId}/grab`,
+                actionId
+            });
+    
+            const response = await fetch(`/api/documents/routes/${actionId}/grab`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Authorization': `Bearer ${token}`
+                },
+                credentials: 'include', // Include cookies
+                body: JSON.stringify({
+                    actionid: parseInt(actionId)
+                })
+            });
+    
+            // Log the raw response for debugging
+            console.log('Raw response:', response);
+    
+            const responseData = await response.json();
+            console.log('Response data:', responseData);
+    
+            if (!response.ok) {
+                throw new Error(responseData.message || responseData.error || 'Failed to grab document');
+            }
+    
+            return responseData;
+    
+        } catch (error) {
+            console.error('Error in grabbing Document:', error);
+            throw new Error(`Error grabbing document: ${error.message}`);
+        }
+    }
+
+    async function isOnline() {
+        return navigator.onLine;
+    }
+
+    async function showSuccess(message) {
+        const toast = document.createElement('div');
+        toast.className = 'toast align-items-center text-white bg-success border-0 position-fixed end-0 m-3';
+        toast.style.top = '70px'; // 👈 move below navbar (adjust as needed)
+        toast.setAttribute('role', 'alert');
+        toast.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">
+                    ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        `;
+        document.body.appendChild(toast);
+        const bsToast = new bootstrap.Toast(toast);
+        bsToast.show();
+
+        toast.addEventListener('hidden.bs.toast', () => toast.remove());
+    }

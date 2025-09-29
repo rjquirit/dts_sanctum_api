@@ -7,17 +7,20 @@
     <div class="search-section">
         <div class="search-container">
             <input type="text" id="trackingNumber" class="search-input" placeholder="Enter Tracking Number" value="">
-            <button id="searchBtn" class="btn-search">
-                <i class="fas fa-search"></i> Search
-            </button>
-            <button id="scanBtn" class="btn-scan">
-        <i class="fas fa-camera"></i> Scan
-    </button>
-        </div>
-        <div style="display: flex; justify-content: flex-end; margin-top: 15px;">
-            <button id="printBtn" class="btn-print">
-                <i class="fas fa-print"></i> Print
-            </button>
+            <div class="button-group">
+                <button id="searchBtn" class="btn-action btn-search" title="Search">
+                    <i class="fas fa-search"></i>
+                </button>
+                <button id="scanBtn" class="btn-action btn-scan" title="Scan">
+                    <i class="fas fa-camera"></i>
+                </button>
+                <button id="printBtn" class="btn-action btn-print" title="Print">
+                    <i class="fas fa-print"></i>
+                </button>
+                <button id="grabBtn" class="btn-action btn-grab" title="Grab Document">
+                    <i class="fas fa-hand-paper"></i>
+                </button>
+            </div>
         </div>
     </div>
 
