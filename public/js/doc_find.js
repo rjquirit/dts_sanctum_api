@@ -76,12 +76,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // grabDocument button event listener
     grabBtn.addEventListener('click', function() {
-        const trackingNumber = trackingInput.value.trim();
+        const trackingNumber = document.getElementById('documentid').value.trim();
         if (trackingNumber) {
             grabDocument(trackingNumber)
                 .then(response => {
-                    showSuccess('Document grabbed successfully');
-                    searchDocument(trackingNumber); // Refresh the document view
+                    showSuccess('Document grabbed successfully. Check Incoming Documents.');
                 })
                 .catch(error => {
                     showError(error.message);
@@ -412,12 +411,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Display document details
     function displayDocument(data) {
-        const document = data.document;
         
+        const document = data.document;
         documentDetailsContent.innerHTML = `
             <div class="detail-row">
                 <div class="detail-label">Document ID:</div>
                 <div class="detail-value">${document.doc_id || 'N/A'}</div>
+                <input type="hidden" id="documentid" name="documentid" value="${document.doc_id || 'N/A'}">
             </div>
             <div class="detail-row">
                 <div class="detail-label">Tracking Number:</div>
@@ -504,7 +504,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         ${isAccepted ? `<strong>Received:</strong> ${formatDateTime(route.datetime_route_accepted)}<br>` : ''}
                         ${route.received_by ? `<strong>Received By:</strong> ${route.received_by}<br>` : ''}
                         ${route.accepting_remarks ? `<strong>Receiving Remarks:</strong> ${route.accepting_remarks}<br>` : ''}
-                        ${hasActions ? `<strong>Actions Date:</strong> ${formatDateTime(route.actions_datetime)}<br>` : ''}
+                        ${hasActions ? `<strong>Actions Date:</strong> ${formatDateTime(route.actions_datetime)=="Jan 1, 1970, 12:00 AM" ? 'Not yet Accepted':formatDateTime(route.actions_datetime)}<br>` : ''}
                         ${route.actions_taken ? `<strong>Actions Taken:</strong> ${route.actions_taken}<br>` : ''}
                         ${route.acted_by ? `<strong>Acted By:</strong> ${route.acted_by}<br>` : ''}
                         ${route.end_remarks ? `<strong>End Remarks:</strong> ${route.end_remarks}` : ''}

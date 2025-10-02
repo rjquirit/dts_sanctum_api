@@ -649,13 +649,3 @@ const setupHistoryStateHandling = () => {
     handleRouteChange();
   });
 };
-
-if (process.env.NODE_ENV === 'development') {
-    // Unregister service worker in dev
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations()
-            .then(registrations => {
-                registrations.forEach(registration => registration.unregister());
-            });
-    }
-}

@@ -183,7 +183,7 @@
         // }
 
         // Add logout event listener
-        document.getElementById('logoutBtn').addEventListener('click', logout);
+        //document.getElementById('logoutBtn').addEventListener('click', logout);
         function adjustMobileSpacing() {
             const isMobile = window.innerWidth <= 768 && window.innerHeight > window.innerWidth;
             const mainContent = document.querySelector('.main-content');

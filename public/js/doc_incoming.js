@@ -222,7 +222,7 @@ function showAcceptModal(docInfo) {
     document.querySelector('#acceptDocFrom').textContent = docInfo.from;
     
     // Clear previous remarks
-    document.querySelector('#accepting_remarks').value = '';
+    document.querySelector('#accepting_remarks').value = '.';
     
     // Show modal
     const modal = new bootstrap.Modal(document.querySelector('#acceptDocumentModal'));

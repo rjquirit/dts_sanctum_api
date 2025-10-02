@@ -203,7 +203,7 @@ class DocmainController extends Controller
                     'doc_tracking' => $doc->doc_tracking,
                     'doctype_description'=> $doc->doctype->doctype_description ?? '',
                     'docs_description' => $doc->docs_description,
-                    'origin_section' => $doc->origin_section->section_name ?? ($doc->origin_section ?? ''),
+                    'origin_section' => Sections::where('section_id', $doc->origin_section)->value('section_description'),
                     'origin_fname' => $doc->origin_fname ?? ($doc->origin_name ?? ''),
                     'route_fromsection' => $route?->route_fromsection ?? '',
                     'route_from' => $route?->route_from ?? '',
@@ -1211,14 +1211,15 @@ public function grabRoute(Request $request): JsonResponse
 
         // ✅ Validate request
         $validated = $request->validate([
-            'actionid' => 'required|integer|exists:dts_docs,doc_tracking',
+            'actionid' => 'required|integer|exists:dts_docs,doc_id',
         ]);
 
         //$latestActionID=Docmain::where('doc_tracking',$validated['actionid'])->latestRoute()->value('action_id');
-        $latestActionID = Docmain::where('doc_tracking', $validated['actionid'])
-            ->join('dts_docroutes', 'dts_docs.doc_id', '=', 'dts_docroutes.document_id')
-            ->where('dts_docroutes.active', 1)
-            ->max('dts_docroutes.action_id');
+        // $latestActionID = Docmain::where('doc_tracking', $validated['actionid'])
+        //     ->join('dts_docroutes', 'dts_docs.doc_id', '=', 'dts_docroutes.document_id')
+        //     ->where('dts_docroutes.active', 1)
+        //     ->max('dts_docroutes.action_id');
+        $latestActionID=Docroutes::where('document_id', $validated['actionid'])->max('action_id');
 
         $currentRoute = Docroutes::findOrFail($latestActionID);
 
@@ -1248,7 +1249,7 @@ public function grabRoute(Request $request): JsonResponse
             // ✅ Create new route
             $fromSection = Sections::where('section_id', $currentRoute->route_tosection_id)->first();
             $newRouteData = [
-                'document_id'          => $currentRoute->document_id,
+                'document_id'          => $validated['actionid'],
                 'previous_route_id'    => $latestActionID,
                 'route_fromuser_id'    => $currentRoute->route_touser_id,
                 'route_from'           => $user->name, 

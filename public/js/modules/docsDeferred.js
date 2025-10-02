@@ -574,7 +574,7 @@ function displayModalDocument(data) {
                         ${isAccepted ? `<strong>Received:</strong> ${formatDateTime(route.datetime_route_accepted)}<br>` : ''}
                         ${route.received_by ? `<strong>Received By:</strong> ${route.received_by}<br>` : ''}
                         ${route.accepting_remarks ? `<strong>Receiving Remarks:</strong> ${route.accepting_remarks}<br>` : ''}
-                        ${hasActions ? `<strong>Actions Date:</strong> ${formatDateTime(route.actions_datetime)}<br>` : ''}
+                        ${hasActions ? `<strong>Actions Date:</strong> ${formatDateTime(route.actions_datetime)=="Jan 1, 1970, 12:00 AM" ? 'Not yet Accepted':formatDateTime(route.actions_datetime)}<br>` : ''}
                         ${route.actions_taken ? `<strong>Actions Taken:</strong> ${route.actions_taken}<br>` : ''}
                         ${route.acted_by ? `<strong>Acted By:</strong> ${route.acted_by}<br>` : ''}
                         ${route.end_remarks ? `<strong>End Remarks:</strong> ${route.end_remarks}` : ''}
